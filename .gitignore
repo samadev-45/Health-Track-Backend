@@ -1,0 +1,25 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+bin/
+obj/
+
+# Rider
+.idea/
+
+# NuGet
+*.nupkg
+packages/
+
+# Local DB
+*.mdf
+*.ldf
+
+# Others
+*.log
+*.vsidx
