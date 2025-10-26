@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251026132047_CareTaker")]
+    partial class CareTaker
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,157 +24,6 @@ namespace Health.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Health.Domain.Entities.Appointment", b =>
-                {
-                    b.Property<int>("AppointmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AppointmentId"));
-
-                    b.Property<DateTime>("AppointmentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<TimeSpan>("AppointmentTime")
-                        .HasColumnType("time");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("DoctorId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DoctorNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("FollowUpDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Hospital")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PatientId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PatientNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("RejectionReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("AppointmentId");
-
-                    b.HasIndex("AppointmentDate");
-
-                    b.HasIndex("DoctorId");
-
-                    b.HasIndex("IsDeleted");
-
-                    b.HasIndex("PatientId");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("Appointment");
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.AppointmentHistory", b =>
-                {
-                    b.Property<int>("HistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HistoryId"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("AppointmentId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ChangedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ChangedByUserId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("NewAppointmentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("NewDoctorId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("OldAppointmentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("OldDoctorId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.HasKey("HistoryId");
-
-                    b.HasIndex("AppointmentId");
-
-                    b.HasIndex("ChangedByUserId");
-
-                    b.HasIndex("IsDeleted");
-
-                    b.ToTable("AppointmentHistory");
-                });
 
             modelBuilder.Entity("Health.Domain.Entities.CaretakerAccess", b =>
                 {
@@ -420,44 +272,6 @@ namespace Health.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Health.Domain.Entities.Appointment", b =>
-                {
-                    b.HasOne("Health.Domain.Entities.User", "Doctor")
-                        .WithMany("AppointmentsAsDoctor")
-                        .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Health.Domain.Entities.User", "Patient")
-                        .WithMany("AppointmentsAsPatient")
-                        .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Doctor");
-
-                    b.Navigation("Patient");
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.AppointmentHistory", b =>
-                {
-                    b.HasOne("Health.Domain.Entities.Appointment", "Appointment")
-                        .WithMany("History")
-                        .HasForeignKey("AppointmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Health.Domain.Entities.User", "ChangedByUser")
-                        .WithMany()
-                        .HasForeignKey("ChangedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Appointment");
-
-                    b.Navigation("ChangedByUser");
-                });
-
             modelBuilder.Entity("Health.Domain.Entities.CaretakerAccess", b =>
                 {
                     b.HasOne("Health.Domain.Entities.User", "Caretaker")
@@ -488,17 +302,8 @@ namespace Health.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Health.Domain.Entities.Appointment", b =>
-                {
-                    b.Navigation("History");
-                });
-
             modelBuilder.Entity("Health.Domain.Entities.User", b =>
                 {
-                    b.Navigation("AppointmentsAsDoctor");
-
-                    b.Navigation("AppointmentsAsPatient");
-
                     b.Navigation("Caretakers");
 
                     b.Navigation("PatientsUnderCare");
