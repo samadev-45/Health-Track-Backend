@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251027090544_MediactionReminderAdded")]
+    partial class MediactionReminderAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -525,78 +528,6 @@ namespace Health.Infrastructure.Migrations
                     b.ToTable("MedicationReminders");
                 });
 
-            modelBuilder.Entity("Health.Domain.Entities.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<string>("ActionUrl")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("Category")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("NotificationId");
-
-                    b.HasIndex("IsDeleted");
-
-                    b.HasIndex("Priority");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "IsRead");
-
-                    b.ToTable("Notifications");
-                });
-
             modelBuilder.Entity("Health.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<int>("TokenId")
@@ -654,80 +585,6 @@ namespace Health.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("Health.Domain.Entities.ShareableLink", b =>
-                {
-                    b.Property<int>("ShareableLinkId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ShareableLinkId"));
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IncludeAppointments")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IncludeMedicalRecords")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastAccessedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ViewCount")
-                        .HasColumnType("int");
-
-                    b.HasKey("ShareableLinkId");
-
-                    b.HasIndex("ExpiresAt");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("IsDeleted");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ShareableLinks");
-                });
-
             modelBuilder.Entity("Health.Domain.Entities.Unit", b =>
                 {
                     b.Property<int>("UnitId")
@@ -777,7 +634,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 1,
-                            CreatedOn = new DateTime(2025, 10, 27, 10, 19, 47, 221, DateTimeKind.Utc).AddTicks(6603),
+                            CreatedOn = new DateTime(2025, 10, 27, 9, 5, 43, 9, DateTimeKind.Utc).AddTicks(259),
                             Description = "milligram",
                             IsDeleted = false,
                             UnitName = "mg"
@@ -785,7 +642,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 2,
-                            CreatedOn = new DateTime(2025, 10, 27, 10, 19, 47, 221, DateTimeKind.Utc).AddTicks(6608),
+                            CreatedOn = new DateTime(2025, 10, 27, 9, 5, 43, 9, DateTimeKind.Utc).AddTicks(265),
                             Description = "gram",
                             IsDeleted = false,
                             UnitName = "g"
@@ -793,7 +650,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 3,
-                            CreatedOn = new DateTime(2025, 10, 27, 10, 19, 47, 221, DateTimeKind.Utc).AddTicks(6611),
+                            CreatedOn = new DateTime(2025, 10, 27, 9, 5, 43, 9, DateTimeKind.Utc).AddTicks(269),
                             Description = "microgram",
                             IsDeleted = false,
                             UnitName = "mcg"
@@ -801,7 +658,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 4,
-                            CreatedOn = new DateTime(2025, 10, 27, 10, 19, 47, 221, DateTimeKind.Utc).AddTicks(6614),
+                            CreatedOn = new DateTime(2025, 10, 27, 9, 5, 43, 9, DateTimeKind.Utc).AddTicks(286),
                             Description = "milliliter",
                             IsDeleted = false,
                             UnitName = "ml"
@@ -809,7 +666,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 5,
-                            CreatedOn = new DateTime(2025, 10, 27, 10, 19, 47, 221, DateTimeKind.Utc).AddTicks(6616),
+                            CreatedOn = new DateTime(2025, 10, 27, 9, 5, 43, 9, DateTimeKind.Utc).AddTicks(291),
                             Description = "liter",
                             IsDeleted = false,
                             UnitName = "L"
@@ -817,7 +674,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 6,
-                            CreatedOn = new DateTime(2025, 10, 27, 10, 19, 47, 221, DateTimeKind.Utc).AddTicks(6619),
+                            CreatedOn = new DateTime(2025, 10, 27, 9, 5, 43, 9, DateTimeKind.Utc).AddTicks(295),
                             Description = "international unit",
                             IsDeleted = false,
                             UnitName = "IU"
@@ -1062,32 +919,10 @@ namespace Health.Infrastructure.Migrations
                     b.Navigation("Medication");
                 });
 
-            modelBuilder.Entity("Health.Domain.Entities.Notification", b =>
-                {
-                    b.HasOne("Health.Domain.Entities.User", "User")
-                        .WithMany("Notifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Health.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("Health.Domain.Entities.User", "User")
                         .WithMany("RefreshTokens")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.ShareableLink", b =>
-                {
-                    b.HasOne("Health.Domain.Entities.User", "User")
-                        .WithMany("ShareableLinks")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1124,13 +959,9 @@ namespace Health.Infrastructure.Migrations
 
                     b.Navigation("Medications");
 
-                    b.Navigation("Notifications");
-
                     b.Navigation("PatientsUnderCare");
 
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("ShareableLinks");
 
                     b.Navigation("UploadedFiles");
                 });
