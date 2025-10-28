@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251028040721_AddPasswordSalt")]
+    partial class AddPasswordSalt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -777,7 +780,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 1,
-                            CreatedOn = new DateTime(2025, 10, 28, 5, 38, 0, 818, DateTimeKind.Utc).AddTicks(2139),
+                            CreatedOn = new DateTime(2025, 10, 28, 4, 7, 20, 88, DateTimeKind.Utc).AddTicks(6518),
                             Description = "milligram",
                             IsDeleted = false,
                             UnitName = "mg"
@@ -785,7 +788,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 2,
-                            CreatedOn = new DateTime(2025, 10, 28, 5, 38, 0, 818, DateTimeKind.Utc).AddTicks(2146),
+                            CreatedOn = new DateTime(2025, 10, 28, 4, 7, 20, 88, DateTimeKind.Utc).AddTicks(6524),
                             Description = "gram",
                             IsDeleted = false,
                             UnitName = "g"
@@ -793,7 +796,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 3,
-                            CreatedOn = new DateTime(2025, 10, 28, 5, 38, 0, 818, DateTimeKind.Utc).AddTicks(2151),
+                            CreatedOn = new DateTime(2025, 10, 28, 4, 7, 20, 88, DateTimeKind.Utc).AddTicks(6527),
                             Description = "microgram",
                             IsDeleted = false,
                             UnitName = "mcg"
@@ -801,7 +804,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 4,
-                            CreatedOn = new DateTime(2025, 10, 28, 5, 38, 0, 818, DateTimeKind.Utc).AddTicks(2154),
+                            CreatedOn = new DateTime(2025, 10, 28, 4, 7, 20, 88, DateTimeKind.Utc).AddTicks(6530),
                             Description = "milliliter",
                             IsDeleted = false,
                             UnitName = "ml"
@@ -809,7 +812,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 5,
-                            CreatedOn = new DateTime(2025, 10, 28, 5, 38, 0, 818, DateTimeKind.Utc).AddTicks(2158),
+                            CreatedOn = new DateTime(2025, 10, 28, 4, 7, 20, 88, DateTimeKind.Utc).AddTicks(6533),
                             Description = "liter",
                             IsDeleted = false,
                             UnitName = "L"
@@ -817,7 +820,7 @@ namespace Health.Infrastructure.Migrations
                         new
                         {
                             UnitId = 6,
-                            CreatedOn = new DateTime(2025, 10, 28, 5, 38, 0, 818, DateTimeKind.Utc).AddTicks(2162),
+                            CreatedOn = new DateTime(2025, 10, 28, 4, 7, 20, 88, DateTimeKind.Utc).AddTicks(6536),
                             Description = "international unit",
                             IsDeleted = false,
                             UnitName = "IU"
@@ -915,6 +918,9 @@ namespace Health.Infrastructure.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordSalt")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")

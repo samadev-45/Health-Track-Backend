@@ -1,4 +1,4 @@
-﻿//// Health.Domain/Entities/HealthMetric.cs
+﻿
 //using Health.Domain.Common;
 
 //namespace Health.Domain.Entities
@@ -11,7 +11,7 @@
 //        public string MetricCode { get; set; } = null!; // e.g., "glucose", "sodium", "potassium", "temperature"
 //        public decimal Value { get; set; }              // numeric value
 //        public string Unit { get; set; } = null!;       // e.g., "mg/dL", "mmol/L", "°C"
-//        public DateTime MeasuredAt { get; set; }        
+//        public DateTime MeasuredAt { get; set; }
 
 //        public bool IsAbnormal { get; set; } = false;   // computed at insert/update
 //        public string? Notes { get; set; }
