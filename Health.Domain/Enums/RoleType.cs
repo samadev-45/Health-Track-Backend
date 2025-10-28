@@ -14,7 +14,7 @@
         /// Family Member - Can access patient records with permission
         /// </summary>
         FamilyMember = 2,
-
+        
         /// <summary>
         /// System Administrator
         /// </summary>
