@@ -318,13 +318,13 @@ namespace Health.Infrastructure.Data
 
             //    b.Property(x => x.MetricCode).HasMaxLength(50).IsRequired();
             //    b.Property(x => x.Unit).HasMaxLength(20).IsRequired();
-            //    b.Property(x => x.Value).HasPrecision(10, 2);     // decimal(10,2) [web:269][web:278]
+            //    b.Property(x => x.Value).HasPrecision(10, 2);     // decimal(10,2)
             //    b.Property(x => x.Notes).HasMaxLength(300);
 
             //    b.HasOne(x => x.User)
             //     .WithMany(u => u.HealthMetrics)
             //     .HasForeignKey(x => x.UserId)
-            //     .OnDelete(DeleteBehavior.Cascade);               // tie to patient [web:136]
+            //     .OnDelete(DeleteBehavior.Cascade);               // tie to patient 
 
             //    // Helpful indexes
             //    b.HasIndex(x => x.UserId);

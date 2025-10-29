@@ -43,6 +43,25 @@ namespace Health.Application.Services
         // 🔹 Register User
         public async Task<ApiResponse<RegisterResponseDto>> RegisterAsync(RegisterDto registerDto)
         {
+            //  Clean up invalid doctor fields
+            if (registerDto.Role != RoleType.Doctor)
+            {
+                // If the user is NOT a doctor, clear these fields
+                registerDto.SpecialtyId = 0;
+                registerDto.LicenseNumber = null;
+            }
+            // Validate Email
+            if (!IsValidEmail(registerDto.Email))
+                return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid email format.");
+
+            //   Validate Phone Numbers
+            if (!IsValidPhoneNumber(registerDto.PhoneNumber))
+                return ApiResponse<RegisterResponseDto>.ErrorResponse("Phone number must contain exactly 10 digits.");
+
+            if (!IsValidPhoneNumber(registerDto.EmergencyContactPhone))
+                return ApiResponse<RegisterResponseDto>.ErrorResponse("Emergency contact number must contain exactly 10 digits.");
+
+
             if (!IsValidEmail(registerDto.Email))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid email format.");
 
@@ -51,7 +70,7 @@ namespace Health.Application.Services
             if (existingUser.Any())
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Email already registered.");
 
-            // 🧠 Role-based validation
+            //  Role-based validation
             if (registerDto.Role == RoleType.Doctor)
             {
                 if (registerDto.SpecialtyId == 0 || string.IsNullOrWhiteSpace(registerDto.LicenseNumber))
@@ -66,7 +85,7 @@ namespace Health.Application.Services
             // Map DTO → Entity
             var user = _mapper.Map<User>(registerDto);
             user.CreatedOn = DateTime.UtcNow;
-            user.Role = registerDto.Role == 0 ? RoleType.Patient : registerDto.Role;
+            user.Role = registerDto.Role;
             user.PasswordHash = _passwordHasher.HashPassword(user, registerDto.Password);
 
             await _userRepository.AddAsync(user);
@@ -139,16 +158,40 @@ namespace Health.Application.Services
         //  Email Validation
         private bool IsValidEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email)) return false;
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
 
-            var pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            if (!Regex.IsMatch(email, pattern)) return false;
+            // 🔹 Disallow leading/trailing special chars like "-", ".", "_"
+            if (email.StartsWith("-") || email.StartsWith(".") || email.StartsWith("_") ||
+                email.EndsWith("-") || email.EndsWith(".") || email.EndsWith("_"))
+                return false;
 
+            // 🔹 RFC 5322-compliant email pattern with stronger local-part validation
+            var pattern = @"^(?!.*[-_.]{2})[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+            if (!Regex.IsMatch(email, pattern))
+                return false;
+
+            // 🔹 Domain checks (avoid things like "@.com" or "gmail..com")
             var domain = email.Split('@').LastOrDefault();
-            if (domain == null || !domain.Contains('.')) return false;
-            if (domain.StartsWith('.') || domain.EndsWith('.')) return false;
+            if (string.IsNullOrWhiteSpace(domain) || !domain.Contains('.') || domain.Contains(".."))
+                return false;
+
+            // 🔹 Prevent invalid symbols like "/", "\", ",", " "
+            if (Regex.IsMatch(email, @"[\/\\,\s]"))
+                return false;
 
             return true;
         }
+        private bool IsValidPhoneNumber(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+                return false;
+
+            // Allow only 10 digits (no spaces, +, -, etc.)
+            var pattern = @"^\d{10}$";
+            return Regex.IsMatch(phone, pattern);
+        }
+
     }
 }
