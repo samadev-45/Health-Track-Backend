@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Health.Application.Helpers;
 using Health.Application.Interfaces;
 using Health.Application.Services;
@@ -9,37 +9,36 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-
 namespace Health.WebAPI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
             var configuration = builder.Configuration;
-
-            //  Database Configuration
+            builder.Services.AddHttpContextAccessor();
+            // Database Configuration
             builder.Services.AddDbContext<HealthDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+                b => b.MigrationsAssembly("Health.Infrastructure")));
 
-            //  Register Controllers + Swagger
+            // Controllers + Swagger
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            //  Add AutoMapper
+            // AutoMapper
             builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-            // Dependency Injection (from Infrastructure layer)
+            // Infrastructure Dependencies (Repositories, Email, OTP, etc.)
             builder.Services.AddInfrastructure(configuration);
 
-            //Services
+            // Application-level Services
             builder.Services.AddScoped<IAuthService, AuthService>();
-
-            //  JWT Authentication Configuration
             builder.Services.AddScoped<JwtHelper>();
 
+            // JWT Authentication
             var jwtSection = configuration.GetSection("Jwt");
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -65,7 +64,16 @@ namespace Health.WebAPI
 
             var app = builder.Build();
 
-            //  Middleware Pipeline
+            // 🔹 Apply migrations & seed admin
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var context = services.GetRequiredService<HealthDbContext>();
+                await context.Database.MigrateAsync();
+                await SeedData.SeedAdminAsync(context);
+            }
+
+            // Middleware
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -77,7 +85,7 @@ namespace Health.WebAPI
             app.UseAuthorization();
             app.MapControllers();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }
