@@ -1,14 +1,21 @@
 ﻿using Health.Domain.Common;
 using Health.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Health.Infrastructure.Data
 {
     public class HealthDbContext : DbContext
     {
-        public HealthDbContext(DbContextOptions<HealthDbContext> options)
-            : base(options)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public HealthDbContext(
+            DbContextOptions<HealthDbContext> options,
+            IHttpContextAccessor httpContextAccessor
+        ) : base(options)
         {
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public DbSet<User> Users { get; set; } = null!;
@@ -23,6 +30,56 @@ namespace Health.Infrastructure.Data
         public DbSet<ShareableLink> ShareableLinks { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
         //public DbSet<HealthMetric> HealthMetrics { get; set; } = null!;
+        public DbSet<OtpVerification> OtpVerifications { get; set; } = null!;
+
+        //  Automatically set CreatedBy, ModifiedBy, DeletedBy
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var userId = GetCurrentUserId();
+
+            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+            {
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        entry.Entity.CreatedOn = DateTime.UtcNow;
+                        entry.Entity.CreatedBy = userId;
+                        break;
+
+                    case EntityState.Modified:
+                        entry.Entity.ModifiedOn = DateTime.UtcNow;
+                        entry.Entity.ModifiedBy = userId;
+                        break;
+
+                    case EntityState.Deleted:
+                        // Soft delete pattern
+                        entry.State = EntityState.Modified;
+                        entry.Entity.IsDeleted = true;
+                        entry.Entity.DeletedOn = DateTime.UtcNow;
+                        entry.Entity.DeletedBy = userId;
+                        break;
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        //  Extract current user ID from JWT
+        private int? GetCurrentUserId()
+        {
+            try
+            {
+                var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out var userId))
+                    return userId;
+            }
+            catch
+            {
+                // ignored (for background services or unauthenticated operations)
+            }
+            return null;
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -191,7 +248,7 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.IsDeleted);
             });
 
-            // Unit (UCUM-aligned)
+            // Unit 
             modelBuilder.Entity<Unit>(b =>
             {
                 b.HasKey(x => x.UnitId);
@@ -200,15 +257,15 @@ namespace Health.Infrastructure.Data
 
                 b.HasIndex(x => x.UnitName).IsUnique(); // avoid duplicates
 
-                
-                b.HasData(
-                    new Unit { UnitId = 1, UnitName = "mg", Description = "milligram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                    new Unit { UnitId = 2, UnitName = "g", Description = "gram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                    new Unit { UnitId = 3, UnitName = "mcg", Description = "microgram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                    new Unit { UnitId = 4, UnitName = "ml", Description = "milliliter", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                    new Unit { UnitId = 5, UnitName = "L", Description = "liter", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                    new Unit { UnitId = 6, UnitName = "IU", Description = "international unit", CreatedOn = DateTime.UtcNow, IsDeleted = false }
-                );
+
+                //b.HasData(
+                //    new Unit { UnitId = 1, UnitName = "mg", Description = "milligram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
+                //    new Unit { UnitId = 2, UnitName = "g", Description = "gram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
+                //    new Unit { UnitId = 3, UnitName = "mcg", Description = "microgram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
+                //    new Unit { UnitId = 4, UnitName = "ml", Description = "milliliter", CreatedOn = DateTime.UtcNow, IsDeleted = false },
+                //    new Unit { UnitId = 5, UnitName = "L", Description = "liter", CreatedOn = DateTime.UtcNow, IsDeleted = false },
+                //    new Unit { UnitId = 6, UnitName = "IU", Description = "international unit", CreatedOn = DateTime.UtcNow, IsDeleted = false }
+                //);
             });
 
             // Medication
@@ -332,6 +389,30 @@ namespace Health.Infrastructure.Data
             //    b.HasIndex(x => x.MeasuredAt);
             //    b.HasIndex(x => x.IsDeleted);
             //});
+            modelBuilder.Entity<OtpVerification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.OtpCode)
+                    .HasMaxLength(10)
+                    .IsRequired();
+
+                entity.Property(e => e.Purpose)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                entity.Property(e => e.Expiry)
+                    .IsRequired();
+
+                entity.Property(e => e.Used)
+                    .HasDefaultValue(false);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
 
 
         }

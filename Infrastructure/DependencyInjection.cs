@@ -2,6 +2,7 @@
 using Health.Application.Services;
 using Health.Infrastructure.Data;
 using Health.Infrastructure.Repositories;
+using Health.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,9 +17,12 @@ namespace Health.Infrastructure
             services.AddDbContext<HealthDbContext>(options =>
                 options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
-            // Register repositories & services
+            // Repository pattern
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            services.AddScoped<IAuthService, AuthService>();
+
+            // Infrastructure services
+            services.AddScoped<IEmailSenderService, EmailSenderService>();
+            services.AddScoped<IOtpService, OtpService>();
 
             return services;
         }

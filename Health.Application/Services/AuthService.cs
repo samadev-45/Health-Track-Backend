@@ -24,7 +24,7 @@ namespace Health.Application.Services
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IMapper _mapper;
 
-        // Store refresh tokens in-memory (no DB)
+       
         private static readonly Dictionary<int, string> _activeRefreshTokens = new();
 
         public AuthService(
@@ -40,7 +40,7 @@ namespace Health.Application.Services
             _passwordHasher = new PasswordHasher<User>();
         }
 
-        // 🔹 Register User
+        // Register User
         public async Task<ApiResponse<RegisterResponseDto>> RegisterAsync(RegisterDto registerDto)
         {
             //  Clean up invalid doctor fields
@@ -71,16 +71,27 @@ namespace Health.Application.Services
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Email already registered.");
 
             //  Role-based validation
-            if (registerDto.Role == RoleType.Doctor)
+             
+            switch (registerDto.Role)
             {
-                if (registerDto.SpecialtyId == 0 || string.IsNullOrWhiteSpace(registerDto.LicenseNumber))
-                    return ApiResponse<RegisterResponseDto>.ErrorResponse("Doctors must have a valid Specialty ID and License Number.");
+                case RoleType.Doctor:
+                    if (registerDto.SpecialtyId == 0 || string.IsNullOrWhiteSpace(registerDto.LicenseNumber))
+                        return ApiResponse<RegisterResponseDto>.ErrorResponse("Doctors must have a valid Specialty ID and License Number.");
+                    break;
+
+                case RoleType.Patient:
+                case RoleType.FamilyMember:
+                    if (registerDto.SpecialtyId != 0 || !string.IsNullOrWhiteSpace(registerDto.LicenseNumber))
+                        return ApiResponse<RegisterResponseDto>.ErrorResponse("Only doctors can have Specialty ID or License Number.");
+                    break;
+
+                case RoleType.Admin:
+                    return ApiResponse<RegisterResponseDto>.ErrorResponse("You are not allowed to register as an Admin.");
+
+                default:
+                    return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid role type.");
             }
-            else
-            {
-                if (registerDto.SpecialtyId != 0 || !string.IsNullOrWhiteSpace(registerDto.LicenseNumber))
-                    return ApiResponse<RegisterResponseDto>.ErrorResponse("Only doctors can have Specialty ID or License Number.");
-            }
+
 
             // Map DTO → Entity
             var user = _mapper.Map<User>(registerDto);
@@ -103,7 +114,7 @@ namespace Health.Application.Services
             return ApiResponse<RegisterResponseDto>.SuccessResponse(response, "Registration completed successfully");
         }
 
-        // 🔹 Login User
+        //  Login User
         public async Task<ApiResponse<LoginResponseDto>> LoginAsync(LoginDto loginDto)
         {
             if (!IsValidEmail(loginDto.Email))
@@ -120,23 +131,27 @@ namespace Health.Application.Services
                 return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid password.");
 
             // Generate JWT and Refresh Token
-            var token = _jwtHelper.GenerateToken(user.UserId, user.Email, user.Role);
-            var refreshToken = GenerateRefreshToken();
-            _activeRefreshTokens[user.UserId] = refreshToken; // in-memory
+           
+            var (accessToken, refreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
+
+            
+            _activeRefreshTokens[user.UserId] = refreshToken;
+            
 
             var response = new LoginResponseDto
             {
                 FullName = user.FullName,
                 Email = user.Email,
                 Role = user.Role.ToString(),
-                Token = token,
+                Token = accessToken,
                 RefreshToken = refreshToken
             };
+
 
             return ApiResponse<LoginResponseDto>.SuccessResponse(response, "Login successful");
         }
 
-        // 🔹 Logout (Revoke Refresh Token)
+        //  Logout (Revoke Refresh Token)
         public ApiResponse<string> Logout(int userId)
         {
             if (_activeRefreshTokens.ContainsKey(userId))
@@ -148,7 +163,7 @@ namespace Health.Application.Services
             return ApiResponse<string>.ErrorResponse("No active session found for this user.");
         }
 
-        // 🔹 Generate Secure Refresh Token
+        //  Generate Secure Refresh Token
         private string GenerateRefreshToken()
         {
             var randomBytes = RandomNumberGenerator.GetBytes(64);
@@ -161,23 +176,23 @@ namespace Health.Application.Services
             if (string.IsNullOrWhiteSpace(email))
                 return false;
 
-            // 🔹 Disallow leading/trailing special chars like "-", ".", "_"
+            //  Disallow leading/trailing special chars like "-", ".", "_"
             if (email.StartsWith("-") || email.StartsWith(".") || email.StartsWith("_") ||
                 email.EndsWith("-") || email.EndsWith(".") || email.EndsWith("_"))
                 return false;
 
-            // 🔹 RFC 5322-compliant email pattern with stronger local-part validation
+            // compliant email pattern with stronger local-part validation
             var pattern = @"^(?!.*[-_.]{2})[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
 
             if (!Regex.IsMatch(email, pattern))
                 return false;
 
-            // 🔹 Domain checks (avoid things like "@.com" or "gmail..com")
+            //  Domain checks (avoid things like "@.com" or "gmail..com")
             var domain = email.Split('@').LastOrDefault();
             if (string.IsNullOrWhiteSpace(domain) || !domain.Contains('.') || domain.Contains(".."))
                 return false;
 
-            // 🔹 Prevent invalid symbols like "/", "\", ",", " "
+            //  Prevent invalid symbols like "/", "\", ",", " "
             if (Regex.IsMatch(email, @"[\/\\,\s]"))
                 return false;
 

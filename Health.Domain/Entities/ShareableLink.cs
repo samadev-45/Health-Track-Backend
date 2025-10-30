@@ -1,4 +1,4 @@
-﻿// Health.Domain/Entities/ShareableLink.cs
+﻿
 using Health.Domain.Common;
 
 namespace Health.Domain.Entities
@@ -13,7 +13,7 @@ namespace Health.Domain.Entities
         public bool IsActive { get; set; } = true;      // can be toggled off
         public DateTime? RevokedAt { get; set; }        // explicit revoke time
 
-        // Scope flags / filters
+        
         public bool IncludeMedicalRecords { get; set; } = true;
         public bool IncludeAppointments { get; set; } = false;
         

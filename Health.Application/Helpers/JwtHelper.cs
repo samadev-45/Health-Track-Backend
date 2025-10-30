@@ -8,7 +8,6 @@ using Microsoft.IdentityModel.Tokens;
 using Health.Domain.Enums;
 
 namespace Health.Application.Helpers
-
 {
     public class JwtHelper
     {
@@ -19,8 +18,15 @@ namespace Health.Application.Helpers
             _configuration = configuration;
         }
 
-        public string GenerateToken(int userId, string email, RoleType role)
+        public (string AccessToken, string RefreshToken) GenerateTokens(int userId, string email, RoleType role)
         {
+            var jwtSection = _configuration.GetSection("Jwt");
+            var key = jwtSection["Key"] ?? throw new ArgumentNullException("Jwt:Key");
+            var issuer = jwtSection["Issuer"];
+            var audience = jwtSection["Audience"];
+            var accessTokenMinutes = int.TryParse(jwtSection["AccessTokenMinutes"], out var minutes) ? minutes : 15;
+            var refreshTokenDays = int.TryParse(jwtSection["RefreshTokenDays"], out var days) ? days : 7;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
@@ -28,18 +34,25 @@ namespace Health.Application.Helpers
                 new Claim(ClaimTypes.Role, role.ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var signingKey = new SymmetricSecurityKey(keyBytes);
+            var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+            // Access Token
+            var accessToken = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
-                signingCredentials: creds
+                expires: DateTime.UtcNow.AddMinutes(accessTokenMinutes),
+                signingCredentials: credentials
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
+
+            // Refresh Token (random string, not JWT)
+            var refreshToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Guid.NewGuid();
+
+            return (accessTokenString, refreshToken);
         }
     }
 }

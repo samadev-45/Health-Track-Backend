@@ -1,4 +1,4 @@
-﻿// Health.Domain/Entities/AppointmentHistory.cs
+﻿
 using Health.Domain.Common;
 
 namespace Health.Domain.Entities

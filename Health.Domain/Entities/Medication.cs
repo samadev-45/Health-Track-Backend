@@ -1,4 +1,4 @@
-﻿// Health.Domain/Entities/Medication.cs
+﻿
 using Health.Domain.Common;
 
 namespace Health.Domain.Entities

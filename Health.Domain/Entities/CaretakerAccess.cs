@@ -1,4 +1,4 @@
-﻿// Health.Domain/Entities/CaretakerAccess.cs
+﻿
 using Health.Domain.Common;
 using Health.Domain.Enums;
 
