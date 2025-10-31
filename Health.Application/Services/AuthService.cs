@@ -97,6 +97,7 @@ namespace Health.Application.Services
             var user = _mapper.Map<User>(registerDto);
             user.CreatedOn = DateTime.UtcNow;
             user.Role = registerDto.Role;
+            user.Status = AccountStatus.Pending;
             user.PasswordHash = _passwordHasher.HashPassword(user, registerDto.Password);
 
             await _userRepository.AddAsync(user);
@@ -108,7 +109,7 @@ namespace Health.Application.Services
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 IsEmailVerified = false,
-                Message = "Registration successful"
+                Message = "Registration successful.Awaiting admin approval"
             };
 
             return ApiResponse<RegisterResponseDto>.SuccessResponse(response, "Registration completed successfully");
@@ -125,6 +126,13 @@ namespace Health.Application.Services
 
             if (user == null)
                 return ApiResponse<LoginResponseDto>.ErrorResponse("User not found.");
+
+            if (user.Status == AccountStatus.Pending)
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Your account is pending approval by admin.");
+
+            if (user.Status == AccountStatus.Rejected)
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Your registration was rejected. Please contact admin.");
+
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
             if (result == PasswordVerificationResult.Failed)

@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251031044928_AddBloodTypeTable")]
+    partial class AddBloodTypeTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,121 +24,6 @@ namespace Health.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("BloodType", b =>
-                {
-                    b.Property<int>("BloodTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BloodTypeId"));
-
-                    b.Property<int?>("CreatedBy")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<DateTime>("CreatedOn")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("nvarchar(5)");
-
-                    b.HasKey("BloodTypeId");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("BloodType", "master");
-
-                    b.HasData(
-                        new
-                        {
-                            BloodTypeId = 1,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "A+"
-                        },
-                        new
-                        {
-                            BloodTypeId = 2,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "A-"
-                        },
-                        new
-                        {
-                            BloodTypeId = 3,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "B+"
-                        },
-                        new
-                        {
-                            BloodTypeId = 4,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "B-"
-                        },
-                        new
-                        {
-                            BloodTypeId = 5,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "AB+"
-                        },
-                        new
-                        {
-                            BloodTypeId = 6,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "AB-"
-                        },
-                        new
-                        {
-                            BloodTypeId = 7,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "O+"
-                        },
-                        new
-                        {
-                            BloodTypeId = 8,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "O-"
-                        });
-                });
 
             modelBuilder.Entity("Health.Domain.Entities.Appointment", b =>
                 {
@@ -1000,8 +888,9 @@ namespace Health.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int?>("BloodTypeId")
-                        .HasColumnType("int");
+                    b.Property<string>("BloodType")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
@@ -1086,16 +975,7 @@ namespace Health.Infrastructure.Migrations
                     b.Property<int?>("SpecialtyId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Pending");
-
                     b.HasKey("UserId");
-
-                    b.HasIndex("BloodTypeId");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -1272,21 +1152,6 @@ namespace Health.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.User", b =>
-                {
-                    b.HasOne("BloodType", "BloodType")
-                        .WithMany("Users")
-                        .HasForeignKey("BloodTypeId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("BloodType");
-                });
-
-            modelBuilder.Entity("BloodType", b =>
-                {
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.Appointment", b =>

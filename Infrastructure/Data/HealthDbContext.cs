@@ -3,6 +3,7 @@ using Health.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Health.Domain.Enums;
 
 namespace Health.Infrastructure.Data
 {
@@ -31,6 +32,8 @@ namespace Health.Infrastructure.Data
         public DbSet<Notification> Notifications { get; set; } = null!;
         //public DbSet<HealthMetric> HealthMetrics { get; set; } = null!;
         public DbSet<OtpVerification> OtpVerifications { get; set; } = null!;
+        public DbSet<BloodType> BloodTypes { get; set; }
+
 
         //  Automatically set CreatedBy, ModifiedBy, DeletedBy
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -93,7 +96,15 @@ namespace Health.Infrastructure.Data
                 builder.Property(u => u.Email).HasMaxLength(100).IsRequired();
                 builder.Property(u => u.PasswordHash).IsRequired();
                 builder.Property(u => u.PhoneNumber).HasMaxLength(20);
-                builder.Property(u => u.BloodType).HasMaxLength(10);
+                builder.Property(u => u.Status)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasDefaultValue(AccountStatus.Pending);
+                //builder.Property(u => u.BloodType).HasMaxLength(10);
+                builder.HasOne(u => u.BloodType)
+                                    .WithMany(bt => bt.Users)
+                                    .HasForeignKey(u => u.BloodTypeId)
+                                    .OnDelete(DeleteBehavior.SetNull);
                 builder.Property(u => u.Address).HasMaxLength(500);
 
                 builder.Property(u => u.EmergencyContactName).HasMaxLength(100);
@@ -252,20 +263,20 @@ namespace Health.Infrastructure.Data
             modelBuilder.Entity<Unit>(b =>
             {
                 b.HasKey(x => x.UnitId);
-                b.Property(x => x.UnitName).HasMaxLength(20).IsRequired(); // e.g., mg, mL, IU
+                b.Property(x => x.UnitName).HasMaxLength(20).IsRequired();
                 b.Property(x => x.Description).HasMaxLength(100);
 
-                b.HasIndex(x => x.UnitName).IsUnique(); // avoid duplicates
+                
+                b.Property(x => x.CreatedOn)
+                 .HasDefaultValueSql("GETUTCDATE()"); 
 
+                b.Property(x => x.CreatedBy)
+                 .HasDefaultValue(1); 
 
-                //b.HasData(
-                //    new Unit { UnitId = 1, UnitName = "mg", Description = "milligram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                //    new Unit { UnitId = 2, UnitName = "g", Description = "gram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                //    new Unit { UnitId = 3, UnitName = "mcg", Description = "microgram", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                //    new Unit { UnitId = 4, UnitName = "ml", Description = "milliliter", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                //    new Unit { UnitId = 5, UnitName = "L", Description = "liter", CreatedOn = DateTime.UtcNow, IsDeleted = false },
-                //    new Unit { UnitId = 6, UnitName = "IU", Description = "international unit", CreatedOn = DateTime.UtcNow, IsDeleted = false }
-                //);
+                b.HasIndex(x => x.UnitName).IsUnique();
+
+                // Deterministic HasData call
+                b.HasData(UnitData.GetSeedUnits());
             });
 
             // Medication
@@ -411,6 +422,19 @@ namespace Health.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<BloodType>(b =>
+            {
+                b.ToTable("BloodType", schema: "master"); 
+                b.HasKey(x => x.BloodTypeId);
+                b.Property(x => x.Name).HasMaxLength(5).IsRequired();
+                b.HasIndex(x => x.Name).IsUnique();
+
+                b.Property(x => x.CreatedOn).HasDefaultValueSql("GETUTCDATE()").ValueGeneratedOnAdd();
+                b.Property(x => x.CreatedBy).HasDefaultValue(1);
+
+                b.HasData(BloodTypeData.GetSeed());
             });
 
 

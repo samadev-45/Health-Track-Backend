@@ -23,7 +23,8 @@ namespace Health.Application.Helpers
                 .ForMember(dest => dest.Medications, opt => opt.Ignore())
                 .ForMember(dest => dest.Notifications, opt => opt.Ignore())
                 .ForMember(dest => dest.ShareableLinks, opt => opt.Ignore())
-                .ForMember(dest => dest.UploadedFiles, opt => opt.Ignore());
+                .ForMember(dest => dest.UploadedFiles, opt => opt.Ignore())
+                 .ForMember(dest => dest.BloodType, opt => opt.Ignore());
         }
     }
 }

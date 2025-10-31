@@ -19,7 +19,7 @@ namespace Health.Domain.Entities
         // Profile
         public DateTime? DateOfBirth { get; set; }
         public GenderType? Gender { get; set; }
-        public string? BloodType { get; set; }
+        public int? BloodTypeId { get; set; }
         public string? Address { get; set; }
 
         // Emergency profile
@@ -34,13 +34,16 @@ namespace Health.Domain.Entities
         public RoleType Role { get; set; } = RoleType.Patient;
         public bool IsActive { get; set; } = true;
         public bool IsEmailVerified { get; set; } = false;
+        public AccountStatus Status { get; set; } = AccountStatus.Pending;
 
-        // Doctor-only (optional)
+
+        // Doctor-only 
         public int? SpecialtyId { get; set; }
         public string? LicenseNumber { get; set; }
         public bool IsVerified { get; set; } = false;
 
-        // Navigations 
+        // Navigations
+        public BloodType? BloodType { get; set; }
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public ICollection<CaretakerAccess> Caretakers { get; set; } = new List<CaretakerAccess>();
         public ICollection<CaretakerAccess> PatientsUnderCare { get; set; } = new List<CaretakerAccess>();
