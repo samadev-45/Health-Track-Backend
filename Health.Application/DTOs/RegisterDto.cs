@@ -20,8 +20,9 @@ public class RegisterDto
 
     public GenderType? Gender { get; set; }
 
-    [MaxLength(10)]
-    public string? BloodType { get; set; }
+
+    public int? BloodTypeId { get; set; }
+
 
     [MaxLength(250)]
     public string? Address { get; set; }

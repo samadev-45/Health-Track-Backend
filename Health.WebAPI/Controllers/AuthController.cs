@@ -1,10 +1,12 @@
 ﻿using Health.Application.DTOs;
 using Health.Application.Interfaces;
+using Health.Domain.Enums;
+using Health.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
-using Health.Infrastructure.Data;
 
 namespace Health.WebAPI.Controllers
 {
@@ -33,6 +35,19 @@ namespace Health.WebAPI.Controllers
                 return BadRequest(ModelState);
 
             var response = await _authService.RegisterAsync(registerDto);
+
+            
+            if (response.Success && response.Data is not null)
+            {
+                
+                if (string.IsNullOrWhiteSpace((response.Data as RegisterResponseDto)!.Status))
+                {
+                    var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == registerDto.Email);
+                    if (user is not null)
+                        (response.Data as RegisterResponseDto)!.Status = user.Status.ToString();
+                }
+            }
+
             if (!response.Success)
                 return BadRequest(response);
 
@@ -89,6 +104,73 @@ namespace Health.WebAPI.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        // Admin endpoints
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin/users/pending")]
+        public async Task<IActionResult> GetPendingUsers()
+        {
+            var users = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.Status == AccountStatus.Pending && !u.IsDeleted)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.FullName,
+                    u.Email,
+                    Status = u.Status.ToString()
+                })
+                .ToListAsync();
+
+            return Ok(users);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin/users/{id:int}/approve")]
+        public async Task<IActionResult> ApproveUser(int id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && !u.IsDeleted);
+            if (user is null)
+                return NotFound(new { message = "User not found." });
+
+            if (user.Status != AccountStatus.Pending)
+                return BadRequest(new { message = "User is not in Pending status." });
+
+            user.Status = AccountStatus.Approved;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                user.UserId,
+                user.Email,
+                Status = user.Status.ToString(),
+                message = "User approved successfully."
+            });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin/users/{id:int}/reject")]
+        public async Task<IActionResult> RejectUser(int id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && !u.IsDeleted);
+            if (user is null)
+                return NotFound(new { message = "User not found." });
+
+            if (user.Status != AccountStatus.Pending)
+                return BadRequest(new { message = "User is not in Pending status." });
+
+            user.Status = AccountStatus.Rejected;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                user.UserId,
+                user.Email,
+                Status = user.Status.ToString(),
+                message = "User rejected."
+            });
         }
     }
 }
