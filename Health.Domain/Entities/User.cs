@@ -12,7 +12,7 @@ namespace Health.Domain.Entities
         // Basic
         public string FullName { get; set; } = null!;
         public string Email { get; set; } = null!;
-        public string PasswordHash { get; set; } = null!;
+        public string? PasswordHash { get; set; } 
 
         public string? PhoneNumber { get; set; }
 

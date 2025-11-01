@@ -80,7 +80,7 @@ namespace Health.Application.Services
                     break;
 
                 case RoleType.Patient:
-                case RoleType.FamilyMember:
+                case RoleType.CareTaker:
                     if (registerDto.SpecialtyId != 0 || !string.IsNullOrWhiteSpace(registerDto.LicenseNumber))
                         return ApiResponse<RegisterResponseDto>.ErrorResponse("Only doctors can have Specialty ID or License Number.");
                     break;
@@ -215,6 +215,13 @@ namespace Health.Application.Services
             var pattern = @"^\d{10}$";
             return Regex.IsMatch(phone, pattern);
         }
+
+        public (string Token, string RefreshToken) GenerateTokensForUser(User user)
+        {
+            var (accessToken, refreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
+            return (accessToken, refreshToken);
+        }
+
 
     }
 }

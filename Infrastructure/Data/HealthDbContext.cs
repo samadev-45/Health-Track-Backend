@@ -94,7 +94,7 @@ namespace Health.Infrastructure.Data
 
                 builder.Property(u => u.FullName).HasMaxLength(100).IsRequired();
                 builder.Property(u => u.Email).HasMaxLength(100).IsRequired();
-                builder.Property(u => u.PasswordHash).IsRequired();
+                builder.Property(u => u.PasswordHash).IsRequired(false); // Made nullable for OTP-only caretakers
                 builder.Property(u => u.PhoneNumber).HasMaxLength(20);
                 builder.Property(u => u.Status)
                 .HasConversion<string>()
@@ -404,25 +404,32 @@ namespace Health.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
 
-                entity.Property(e => e.OtpCode)
-                    .HasMaxLength(10)
-                    .IsRequired();
+                // Map the hash column, not OtpCode, for length
+                entity.Property(e => e.OtpCodeHash)
+                    .HasMaxLength(256)
+                    .IsRequired(false);
+
+                // Do NOT set HasMaxLength on int OtpCode; remove previous MaxLength(10) line
 
                 entity.Property(e => e.Purpose)
                     .HasMaxLength(50)
                     .IsRequired();
 
-                entity.Property(e => e.Expiry)
-                    .IsRequired();
+                entity.Property(e => e.Expiry).IsRequired();
 
-                entity.Property(e => e.Used)
-                    .HasDefaultValue(false);
+                entity.Property(e => e.Used).HasDefaultValue(false);
+
+                entity.Property(e => e.Attempts).HasDefaultValue(0);
 
                 entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.UserId, e.Purpose, e.Expiry, e.Used });
             });
+
+
 
             modelBuilder.Entity<BloodType>(b =>
             {

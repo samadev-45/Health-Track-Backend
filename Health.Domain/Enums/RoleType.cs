@@ -13,7 +13,7 @@
         /// <summary>
         /// Family Member - Can access patient records with permission
         /// </summary>
-        FamilyMember = 2,
+        CareTaker = 2,
         
         /// <summary>
         /// System Administrator
