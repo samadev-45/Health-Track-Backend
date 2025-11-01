@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251101052932_HardenOtpForEmailLogins")]
+    partial class HardenOtpForEmailLogins
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -721,19 +724,14 @@ namespace Health.Infrastructure.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Attempts")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("Expiry")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("OtpCode")
+                        .HasMaxLength(10)
                         .HasColumnType("int");
-
-                    b.Property<string>("OtpCodeHash")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
@@ -750,7 +748,7 @@ namespace Health.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Purpose", "Expiry", "Used");
+                    b.HasIndex("UserId");
 
                     b.ToTable("OtpVerifications");
                 });
@@ -1081,6 +1079,7 @@ namespace Health.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")

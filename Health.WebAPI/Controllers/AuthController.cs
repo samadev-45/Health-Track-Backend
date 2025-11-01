@@ -1,11 +1,13 @@
 ﻿using Health.Application.DTOs;
 using Health.Application.Interfaces;
+using Health.Domain.Entities;
 using Health.Domain.Enums;
 using Health.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Health.WebAPI.Controllers
@@ -172,5 +174,60 @@ namespace Health.WebAPI.Controllers
                 message = "User rejected."
             });
         }
+
+        [HttpPost("caretaker/request-email-otp")]
+        public async Task<IActionResult> RequestCaretakerEmailOtp([FromBody] CaretakerEmailOtpRequestDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return BadRequest(new { message = "Email is required." });
+
+            var email = dto.Email.Trim().ToLowerInvariant();
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email && u.Role == RoleType.CareTaker && !u.IsDeleted);
+
+            if (user is null)
+            {
+                user = new User
+                {
+                    FullName = string.IsNullOrWhiteSpace(dto.FullName) ? "Caretaker" : dto.FullName!.Trim(),
+                    Email = email,
+                    Role = RoleType.CareTaker,
+                    Status = AccountStatus.Pending,
+                    IsActive = true
+                };
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            await _otpService.GenerateAndSendOtpAsync(email, "CaretakerEmailLogin", 5);
+            return Ok(new { message = "If the email is valid, an OTP has been sent." });
+        }
+
+        [HttpPost("caretaker/verify-email-otp")]
+        public async Task<IActionResult> VerifyCaretakerEmailOtp([FromBody] CaretakerEmailOtpVerifyDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Otp))
+                return BadRequest(new { message = "Email and OTP are required." });
+
+            var email = dto.Email.Trim().ToLowerInvariant();
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email && u.Role == RoleType.CareTaker && !u.IsDeleted);
+
+            if (user is null)
+                return BadRequest(new { message = "Invalid email or OTP." });
+
+            var valid = await _otpService.VerifyOtpAsync(user.UserId, dto.Otp, "CaretakerEmailLogin");
+            if (!valid)
+                return BadRequest(new { message = "Invalid or expired OTP." });
+
+            if (user.Status != AccountStatus.Approved)
+                return Ok(new { status = user.Status.ToString(), message = "Email verified. Awaiting admin approval." });
+
+            var (token, refreshToken) = _authService.GenerateTokensForUser(user);
+            return Ok(new { token, refreshToken, role = user.Role.ToString(), message = "Login successful." });
+        }
+
+
     }
 }

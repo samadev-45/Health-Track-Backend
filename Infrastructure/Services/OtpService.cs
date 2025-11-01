@@ -1,11 +1,9 @@
 ﻿using Health.Application.Interfaces;
 using Health.Domain.Entities;
 using Health.Infrastructure.Data;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Health.Application.Services
 {
@@ -20,62 +18,91 @@ namespace Health.Application.Services
             _emailSender = emailSender;
         }
 
-        public async Task GenerateAndSendOtpAsync(string email, string purpose)
+        private static string HashOtp(string otp)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            using var sha = SHA256.Create();
+            return Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(otp)));
+        }
+
+        // Generate and send OTP (email)
+        public async Task GenerateAndSendOtpAsync(string email, string purpose, int expiryMinutes = 5)
+        {
+            var normEmail = email.Trim().ToLowerInvariant();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normEmail);
             if (user == null)
                 throw new Exception("User not found.");
 
-            // ✅ Generate numeric OTP (6 digits)
-            var otpCode = new Random().Next(100000, 999999);
-            var expiryTime = DateTime.UtcNow.AddMinutes(10);
-
-            var otp = new OtpVerification
+            
+            var now = DateTime.UtcNow;
+            var recent = await _context.OtpVerifications
+                .Where(o => o.UserId == user.UserId && o.Purpose == purpose && !o.Used && o.Expiry > now)
+                .OrderByDescending(o => o.Id)
+                .FirstOrDefaultAsync();
+            
+            var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+            var rec = new OtpVerification
             {
                 UserId = user.UserId,
-                OtpCode = otpCode,  // now int
+                OtpCodeHash = HashOtp(code),  // store only hash
                 Purpose = purpose,
-                Expiry = expiryTime,
-                Used = false
+                Expiry = now.AddMinutes(Math.Clamp(expiryMinutes, 1, 10)),
+                Used = false,
+                Attempts = 0
             };
 
-            await _context.OtpVerifications.AddAsync(otp);
+            _context.OtpVerifications.Add(rec);
             await _context.SaveChangesAsync();
 
-            string emailBody = $"Your OTP code is {otpCode}. It expires at {expiryTime.ToLocalTime():f}.";
-            await _emailSender.SendEmailAsync(email, "Your OTP Code", emailBody);
+            var body = $"Your OTP code is {code}. It expires in {expiryMinutes} minutes.";
+            await _emailSender.SendEmailAsync(normEmail, "Your OTP Code", body);
         }
 
-        public async Task<bool> VerifyOtpAsync(int userId, int otpCode, string purpose)
+        // Verify OTP; marks Used on success; enforces attempts
+        public async Task<bool> VerifyOtpAsync(int userId, string otp, string purpose)
         {
-            var otp = await _context.OtpVerifications
-                .Where(o => o.UserId == userId && o.OtpCode == otpCode && o.Purpose == purpose && !o.Used)
-                .OrderByDescending(o => o.Expiry)
+            var now = DateTime.UtcNow;
+            var rec = await _context.OtpVerifications
+                .Where(o => o.UserId == userId && o.Purpose == purpose && !o.Used && o.Expiry > now)
+                .OrderByDescending(o => o.Id)
                 .FirstOrDefaultAsync();
 
-            if (otp == null || otp.Expiry < DateTime.UtcNow)
+            if (rec is null)
                 return false;
 
-            otp.Used = true;
+            rec.Attempts++;
+            if (rec.Attempts > 5)
+            {
+                rec.Used = true; // lock this OTP record
+                await _context.SaveChangesAsync();
+                return false;
+            }
+
+            var ok = string.Equals(rec.OtpCodeHash, HashOtp(otp), StringComparison.Ordinal);
+            if (!ok)
+            {
+                await _context.SaveChangesAsync();
+                return false;
+            }
+
+            rec.Used = true; // single-use
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task ResetPasswordAsync(int userId, int otpCode, string newPassword, string confirmPassword)
+        // Forgot password flow continues to call VerifyOtpAsync(userId, otp, "ResetPassword")
+        public async Task ResetPasswordAsync(int userId, string otp, string newPassword, string confirmPassword)
         {
             if (newPassword != confirmPassword)
                 throw new Exception("Passwords do not match.");
 
-            var isOtpValid = await VerifyOtpAsync(userId, otpCode, "ResetPassword");
-            if (!isOtpValid)
+            var valid = await VerifyOtpAsync(userId, otp, "ResetPassword");
+            if (!valid)
                 throw new Exception("Invalid or expired OTP.");
 
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                throw new Exception("User not found.");
+            var user = await _context.Users.FindAsync(userId) ?? throw new Exception("User not found.");
 
-            var passwordHasher = new PasswordHasher<User>();
-            user.PasswordHash = passwordHasher.HashPassword(user, newPassword);
+            var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+            user.PasswordHash = hasher.HashPassword(user, newPassword);
             await _context.SaveChangesAsync();
         }
 
@@ -84,17 +111,17 @@ namespace Health.Application.Services
             if (newPassword != confirmPassword)
                 throw new Exception("New password and confirmation do not match.");
 
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                throw new Exception("User not found.");
+            var user = await _context.Users.FindAsync(userId)
+                       ?? throw new Exception("User not found.");
 
-            var hasher = new PasswordHasher<User>();
+            var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
             var result = hasher.VerifyHashedPassword(user, user.PasswordHash, currentPassword);
-            if (result == PasswordVerificationResult.Failed)
+            if (result == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
                 throw new Exception("Current password is incorrect.");
 
             user.PasswordHash = hasher.HashPassword(user, newPassword);
             await _context.SaveChangesAsync();
         }
+
     }
 }
