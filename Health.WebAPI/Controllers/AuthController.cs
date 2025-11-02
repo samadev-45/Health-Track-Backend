@@ -130,50 +130,42 @@ namespace Health.WebAPI.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("admin/users/{id:int}/approve")]
-        public async Task<IActionResult> ApproveUser(int id)
+        [HttpPost("admin/users/{id:int}/toggle-status")]
+        public async Task<IActionResult> ToggleUserStatus(int id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && !u.IsDeleted);
             if (user is null)
                 return NotFound(new { message = "User not found." });
 
-            if (user.Status != AccountStatus.Pending)
-                return BadRequest(new { message = "User is not in Pending status." });
+            var previous = user.Status;
 
-            user.Status = AccountStatus.Approved;
+            switch (user.Status)
+            {
+                case AccountStatus.Pending:
+                    user.Status = AccountStatus.Approved;
+                    break;
+                case AccountStatus.Approved:
+                    user.Status = AccountStatus.Rejected;
+                    break;
+                case AccountStatus.Rejected:
+                    user.Status = AccountStatus.Approved;
+                    break;
+                default:
+                    return BadRequest(new { message = $"Unsupported status: {user.Status}" });
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
                 user.UserId,
                 user.Email,
-                Status = user.Status.ToString(),
-                message = "User approved successfully."
+                previousStatus = previous.ToString(),
+                currentStatus = user.Status.ToString(),
+                message = $"Status changed from {previous} to {user.Status}."
             });
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPost("admin/users/{id:int}/reject")]
-        public async Task<IActionResult> RejectUser(int id)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && !u.IsDeleted);
-            if (user is null)
-                return NotFound(new { message = "User not found." });
-
-            if (user.Status != AccountStatus.Pending)
-                return BadRequest(new { message = "User is not in Pending status." });
-
-            user.Status = AccountStatus.Rejected;
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                user.UserId,
-                user.Email,
-                Status = user.Status.ToString(),
-                message = "User rejected."
-            });
-        }
 
         [HttpPost("caretaker/request-email-otp")]
         public async Task<IActionResult> RequestCaretakerEmailOtp([FromBody] CaretakerEmailOtpRequestDto dto)

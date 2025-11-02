@@ -51,9 +51,11 @@ namespace Health.Domain.Entities
         public ICollection<Appointment> AppointmentsAsPatient { get; set; } = new List<Appointment>();
         public ICollection<Appointment> AppointmentsAsDoctor { get; set; } = new List<Appointment>();
         public ICollection<Medication> Medications { get; set; } = new List<Medication>();
-        //public ICollection<HealthMetric> HealthMetrics { get; set; } = new List<HealthMetric>();
+        public ICollection<HealthMetric> HealthMetrics { get; set; } = new List<HealthMetric>();
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<ShareableLink> ShareableLinks { get; set; } = new List<ShareableLink>();
         public ICollection<FileStorage> UploadedFiles { get; set; } = new List<FileStorage>();
+        public ICollection<Consultation> Consultations { get; set; } = new List<Consultation>();
+
     }
 }

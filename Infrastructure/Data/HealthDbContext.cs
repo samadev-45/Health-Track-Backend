@@ -30,9 +30,11 @@ namespace Health.Infrastructure.Data
         public DbSet<MedicationReminder> MedicationReminders { get; set; } = null!;
         public DbSet<ShareableLink> ShareableLinks { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
-        //public DbSet<HealthMetric> HealthMetrics { get; set; } = null!;
+        public DbSet<HealthMetric> HealthMetrics { get; set; } = null!;
         public DbSet<OtpVerification> OtpVerifications { get; set; } = null!;
         public DbSet<BloodType> BloodTypes { get; set; }
+        public DbSet<Consultation> Consultations { get; set; } = null!;
+
 
 
         //  Automatically set CreatedBy, ModifiedBy, DeletedBy
@@ -380,26 +382,26 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.IsDeleted);
             });
 
-            //modelBuilder.Entity<HealthMetric>(b =>
-            //{
-            //    b.HasKey(x => x.HealthMetricId);
+            modelBuilder.Entity<HealthMetric>(b =>
+            {
+                b.HasKey(x => x.HealthMetricId);
 
-            //    b.Property(x => x.MetricCode).HasMaxLength(50).IsRequired();
-            //    b.Property(x => x.Unit).HasMaxLength(20).IsRequired();
-            //    b.Property(x => x.Value).HasPrecision(10, 2);     // decimal(10,2)
-            //    b.Property(x => x.Notes).HasMaxLength(300);
+                b.Property(x => x.MetricCode).HasMaxLength(50).IsRequired();
+                b.Property(x => x.Unit).HasMaxLength(20).IsRequired();
+                b.Property(x => x.Value).HasPrecision(10, 2);     // decimal(10,2)
+                b.Property(x => x.Notes).HasMaxLength(300);
 
-            //    b.HasOne(x => x.User)
-            //     .WithMany(u => u.HealthMetrics)
-            //     .HasForeignKey(x => x.UserId)
-            //     .OnDelete(DeleteBehavior.Cascade);               // tie to patient 
+                b.HasOne(x => x.User)
+                 .WithMany(u => u.HealthMetrics)
+                 .HasForeignKey(x => x.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);               // tie to patient 
 
-            //    // Helpful indexes
-            //    b.HasIndex(x => x.UserId);
-            //    b.HasIndex(x => x.MetricCode);
-            //    b.HasIndex(x => x.MeasuredAt);
-            //    b.HasIndex(x => x.IsDeleted);
-            //});
+                // Helpful indexes
+                b.HasIndex(x => x.UserId);
+                b.HasIndex(x => x.MetricCode);
+                b.HasIndex(x => x.MeasuredAt);
+                b.HasIndex(x => x.IsDeleted);
+            });
             modelBuilder.Entity<OtpVerification>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -443,6 +445,21 @@ namespace Health.Infrastructure.Data
 
                 b.HasData(BloodTypeData.GetSeed());
             });
+            modelBuilder.Entity<Consultation>(b =>
+            {
+                b.HasKey(x => x.ConsultationId);
+                b.Property(x => x.HealthValuesJson).IsRequired().HasColumnType("nvarchar(max)");
+                b.Property(x => x.CreatedAt).IsRequired();
+
+                b.HasOne(x => x.User)
+                 .WithMany(u => u.Consultations)
+                 .HasForeignKey(x => x.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(x => x.UserId);
+            });
+
+
 
 
 
