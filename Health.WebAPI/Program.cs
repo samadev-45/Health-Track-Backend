@@ -30,7 +30,7 @@ namespace Health.WebAPI
             {
                 options.SwaggerDoc("v1", new() { Title = "HealthTrack API", Version = "v1" });
 
-                // 🔹 Add Bearer Authentication to Swagger
+                // Add Bearer Authentication to Swagger
                 options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -53,8 +53,8 @@ namespace Health.WebAPI
                 }
             },
             Array.Empty<string>()
-        }
-    });
+            }
+            });
             });
 
 

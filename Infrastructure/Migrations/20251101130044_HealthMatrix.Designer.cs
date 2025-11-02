@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251101130044_HealthMatrix")]
+    partial class HealthMatrix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -361,52 +364,6 @@ namespace Health.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("CK_CaretakerAccess_Patient_NE_Caretaker", "[PatientId] <> [CaretakerId]");
                         });
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.Consultation", b =>
-                {
-                    b.Property<int>("ConsultationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConsultationId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("HealthValuesJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ConsultationId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Consultations");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.FileStorage", b =>
@@ -1286,17 +1243,6 @@ namespace Health.Infrastructure.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("Health.Domain.Entities.Consultation", b =>
-                {
-                    b.HasOne("Health.Domain.Entities.User", "User")
-                        .WithMany("Consultations")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Health.Domain.Entities.FileStorage", b =>
                 {
                     b.HasOne("Health.Domain.Entities.User", "UploadedByUser")
@@ -1457,8 +1403,6 @@ namespace Health.Infrastructure.Migrations
                     b.Navigation("AppointmentsAsPatient");
 
                     b.Navigation("Caretakers");
-
-                    b.Navigation("Consultations");
 
                     b.Navigation("HealthMetrics");
 

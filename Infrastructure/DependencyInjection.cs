@@ -23,6 +23,10 @@ namespace Health.Infrastructure
             // Infrastructure services
             services.AddScoped<IEmailSenderService, EmailSenderService>();
             services.AddScoped<IOtpService, OtpService>();
+            services.AddScoped<NormalRangeService>();
+            services.AddScoped<IConsultationService, ConsultationService>();
+
+
 
             return services;
         }
