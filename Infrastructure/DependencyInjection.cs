@@ -25,7 +25,9 @@ namespace Health.Infrastructure
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<NormalRangeService>();
             services.AddScoped<IConsultationService, ConsultationService>();
-
+            
+            services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            services.AddScoped<IAppointmentService, AppointmentService>();
 
 
             return services;
