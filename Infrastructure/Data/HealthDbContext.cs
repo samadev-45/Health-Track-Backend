@@ -99,9 +99,10 @@ namespace Health.Infrastructure.Data
                 builder.Property(u => u.PasswordHash).IsRequired(false); // Made nullable for OTP-only caretakers
                 builder.Property(u => u.PhoneNumber).HasMaxLength(20);
                 builder.Property(u => u.Status)
-                .HasConversion<string>()
-                .HasMaxLength(20)
-                .HasDefaultValue(AccountStatus.Pending);
+                                .HasConversion<int>()
+                                .HasDefaultValue(AccountStatus.Pending)
+                                .IsRequired();
+
                 //builder.Property(u => u.BloodType).HasMaxLength(10);
                 builder.HasOne(u => u.BloodType)
                                     .WithMany(bt => bt.Users)
