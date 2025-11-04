@@ -13,6 +13,7 @@ using Health.Domain.Entities;
 using Health.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Health.Application.Interfaces.EFCore;
 
 namespace Health.Application.Services
 {
