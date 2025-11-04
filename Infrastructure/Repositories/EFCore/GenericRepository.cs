@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Health.Application.Interfaces;
+using Health.Application.Interfaces.EFCore;
 using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Health.Infrastructure.Repositories
+namespace Health.Infrastructure.Repositories.EFCore
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {

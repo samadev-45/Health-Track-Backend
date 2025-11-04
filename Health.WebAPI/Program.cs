@@ -69,6 +69,7 @@ namespace Health.WebAPI
             builder.Services.AddScoped<JwtHelper>();
 
             // JWT Authentication
+            // JWT Authentication
             var jwtSection = configuration.GetSection("Jwt");
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -86,9 +87,14 @@ namespace Health.WebAPI
                             Encoding.UTF8.GetBytes(jwtSection["Key"]!)
                         ),
                         ValidateLifetime = true,
-                        ClockSkew = TimeSpan.FromSeconds(30)
+                        ClockSkew = TimeSpan.FromSeconds(30),
+
+                        // 🔹 These two lines FIX user id & role claims mapping
+                        NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
+                        RoleClaimType = System.Security.Claims.ClaimTypes.Role
                     };
                 });
+
 
             builder.Services.AddAuthorization();
 

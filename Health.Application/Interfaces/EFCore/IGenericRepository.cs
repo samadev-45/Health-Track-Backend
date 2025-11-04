@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace Health.Application.Interfaces
+namespace Health.Application.Interfaces.EFCore
 {
     public interface IGenericRepository<T> where T : class
     {

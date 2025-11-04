@@ -1,0 +1,59 @@
+﻿using Dapper;
+using Health.Application.Interfaces;
+using Health.Application.Interfaces.Dapper;
+using Health.Domain.Entities;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Health.Infrastructure.Repositories.Dapper
+{
+    public class AppointmentReadRepository : IAppointmentReadRepository
+    {
+        private readonly IConfiguration _config;
+
+        public AppointmentReadRepository(IConfiguration config)
+        {
+            _config = config;
+        }
+
+        public async Task<(IEnumerable<Appointment> Appointments, int TotalCount)> GetAppointmentsByDoctorAsync(
+            int doctorId, int? status, int page, int pageSize, CancellationToken ct = default)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            await connection.OpenAsync(ct);
+
+            using var multi = await connection.QueryMultipleAsync(
+                "sp_GetAppointmentsByDoctor",
+                new { DoctorId = doctorId, Status = status, Page = page, PageSize = pageSize },
+                commandType: CommandType.StoredProcedure
+            );
+
+            var totalCount = await multi.ReadFirstAsync<int>();
+            var appointments = await multi.ReadAsync<Appointment>();
+
+            return (appointments, totalCount);
+        }
+
+        public async Task<(IEnumerable<Appointment> Appointments, int TotalCount)> GetAppointmentsByPatientAsync(
+            int patientId, int? status, int page, int pageSize, CancellationToken ct = default)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            await connection.OpenAsync(ct);
+
+            using var multi = await connection.QueryMultipleAsync(
+                "sp_GetAppointmentsByPatient",
+                new { PatientId = patientId, Status = status, Page = page, PageSize = pageSize },
+                commandType: CommandType.StoredProcedure
+            );
+
+            var totalCount = await multi.ReadFirstAsync<int>();
+            var appointments = await multi.ReadAsync<Appointment>();
+
+            return (appointments, totalCount);
+        }
+    }
+}
