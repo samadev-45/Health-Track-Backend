@@ -1,4 +1,5 @@
 ﻿using Health.Application.Common;
+using Health.Application.DTOs;
 using Health.Application.DTOs.Appointments;
 using Health.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -25,8 +26,7 @@ namespace Health.WebAPI.Controllers
             _httpContextAccessor = httpContextAccessor;
         }
 
-        // ✅ Extract UserId from JWT claims
-
+        // Extract UserId from JWT claims
         private int GetUserId()
         {
             var claim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)
@@ -67,7 +67,7 @@ namespace Health.WebAPI.Controllers
         /// Get paginated appointments for the logged-in patient
         /// </summary>
         [HttpGet("patient")]
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "Patient")]
         public async Task<IActionResult> GetPatientAppointments(
             [FromQuery] int? status,
             [FromQuery] int page = 1,
@@ -115,6 +115,45 @@ namespace Health.WebAPI.Controllers
             {
                 return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.ErrorResponse("Internal Server Error", ex.Message, 500));
+            }
+        }
+
+        /// <summary>
+        /// Reschedule an existing appointment (patient)
+        /// </summary>
+        [HttpPost("{appointmentId}/reschedule")]
+        [Authorize(Roles = "Patient")]
+        public async Task<IActionResult> RescheduleAppointment(
+            int appointmentId,
+            [FromBody] RescheduleAppointmentDto dto,
+            CancellationToken ct = default)
+        {
+            int patientId = GetUserId();
+            if (patientId <= 0)
+                return Unauthorized(ApiResponse<object>.ErrorResponse("Invalid or missing user id in token.", 401));
+
+            if (dto == null)
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid reschedule data."));
+
+            try
+            {
+                var result = await _appointmentService.RescheduleAppointmentAsync(appointmentId, patientId, dto, ct);
+
+                return Ok(ApiResponse<object>.SuccessResponse(result, "Appointment rescheduled successfully"));
+            }
+
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+
             catch (Exception ex)
             {
                 return StatusCode(500, ApiResponse<object>.ErrorResponse("Internal Server Error", ex.Message, 500));
