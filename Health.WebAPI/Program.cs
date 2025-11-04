@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Health.Application.Configuration;
 using Health.Application.Helpers;
 using Health.Application.Interfaces;
 using Health.Application.Services;
@@ -60,6 +61,10 @@ namespace Health.WebAPI
 
             // AutoMapper
             builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+
+            // in Program.cs or Startup.cs
+            builder.Services.Configure<AppointmentPolicyConfig>(configuration.GetSection("AppointmentPolicy"));
 
             // Infrastructure Dependencies (Repositories, Email, OTP, etc.)
             builder.Services.AddInfrastructure(configuration);

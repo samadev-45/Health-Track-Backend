@@ -15,5 +15,9 @@ namespace Health.Application.Interfaces
             int patientId, int? status, int page, int pageSize, CancellationToken ct = default);
 
         Task<int> CreateAppointmentAsync(int patientId, CreateAppointmentDto dto, CancellationToken ct = default);
+
+        Task<AppointmentDto> RescheduleAppointmentAsync(int appointmentId, int patientId, RescheduleAppointmentDto dto, CancellationToken ct = default);
+
+
     }
 }
