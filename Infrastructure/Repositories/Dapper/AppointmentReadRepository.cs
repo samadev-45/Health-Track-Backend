@@ -55,5 +55,31 @@ namespace Health.Infrastructure.Repositories.Dapper
 
             return (appointments, totalCount);
         }
+        public async Task<IEnumerable<AppointmentHistory>> GetAppointmentHistoryAsync(
+    int appointmentId,
+    CancellationToken ct = default)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            await connection.OpenAsync(ct);
+
+            var result = await connection.QueryAsync<AppointmentHistory, string, AppointmentHistory>(
+                "sp_GetAppointmentHistory",
+                (history, changedByName) =>
+                {
+                    history.ChangedByUser = new Health.Domain.Entities.User
+                    {
+                        FullName = changedByName
+                    };
+                    return history;
+                },
+                new { AppointmentId = appointmentId },
+                commandType: CommandType.StoredProcedure,
+                splitOn: "ChangedByName"
+            );
+
+            return result.ToList();
+        }
+
+
     }
 }

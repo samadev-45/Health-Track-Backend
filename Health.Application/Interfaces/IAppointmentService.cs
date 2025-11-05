@@ -18,6 +18,17 @@ namespace Health.Application.Interfaces
 
         Task<AppointmentDto> RescheduleAppointmentAsync(int appointmentId, int patientId, RescheduleAppointmentDto dto, CancellationToken ct = default);
 
+        
+        Task<AppointmentDto> CancelAppointmentAsync(int appointmentId, int userId, CancelAppointmentDto dto, CancellationToken ct = default);
+
+        Task<AppointmentDto> ReassignAppointmentAsync(int appointmentId, int adminId, ReassignAppointmentDto dto, CancellationToken ct = default);
+        Task<AppointmentDto> CompleteAppointmentAsync(
+           int appointmentId,
+           int doctorId,
+           CompleteAppointmentDto dto,
+           CancellationToken ct = default);
+        Task<AppointmentDto> RespondToAppointmentAsync(int appointmentId, int doctorId, RespondToAppointmentDto dto, CancellationToken ct = default);
+        Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentHistoryAsync(int appointmentId, CancellationToken ct = default);
 
     }
 }

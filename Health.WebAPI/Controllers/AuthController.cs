@@ -69,7 +69,7 @@ namespace Health.WebAPI.Controllers
             return Ok(response);
         }
 
-        [HttpPost("forgot-password")]
+        [HttpPost("request-email-Otp")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email))
@@ -86,7 +86,7 @@ namespace Health.WebAPI.Controllers
             }
         }
 
-        [HttpPost("reset-password")]
+        [HttpPost("Verify-email-Otp")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         {
             if (!ModelState.IsValid)
