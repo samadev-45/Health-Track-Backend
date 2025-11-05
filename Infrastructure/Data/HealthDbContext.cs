@@ -89,6 +89,9 @@ namespace Health.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
+
+         
+
             // User
             modelBuilder.Entity<User>(builder =>
             {
@@ -169,11 +172,15 @@ namespace Health.Infrastructure.Data
             });
 
             // Appointment
+            
             modelBuilder.Entity<Appointment>(b =>
             {
                 b.HasKey(x => x.AppointmentId);
 
-                b.Property(x => x.Status).HasConversion<int>();
+                b.Property(x => x.Status)
+                    .HasConversion<int>();
+                    
+
                 b.Property(x => x.PatientNotes).HasMaxLength(500);
                 b.Property(x => x.DoctorNotes);
                 b.Property(x => x.RejectionReason).HasMaxLength(500);
@@ -181,14 +188,19 @@ namespace Health.Infrastructure.Data
                 b.Property(x => x.Location).HasMaxLength(300);
 
                 b.HasOne(x => x.Patient)
-                 .WithMany(u => u.AppointmentsAsPatient)
-                 .HasForeignKey(x => x.PatientId)
-                 .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(u => u.AppointmentsAsPatient)
+                    .HasForeignKey(x => x.PatientId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 b.HasOne(x => x.Doctor)
-                 .WithMany(u => u.AppointmentsAsDoctor)
-                 .HasForeignKey(x => x.DoctorId)
-                 .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(u => u.AppointmentsAsDoctor)
+                    .HasForeignKey(x => x.DoctorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Prevent duplicate bookings
+                b.HasIndex(x => new { x.DoctorId, x.AppointmentDate, x.AppointmentTime })
+                 .IsUnique()
+                 .HasDatabaseName("UX_Doctor_AppointmentSlot");
 
                 b.HasIndex(x => x.PatientId);
                 b.HasIndex(x => x.DoctorId);
@@ -196,6 +208,7 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.Status);
                 b.HasIndex(x => x.IsDeleted);
             });
+
 
             // AppointmentHistory
             modelBuilder.Entity<AppointmentHistory>(b =>
