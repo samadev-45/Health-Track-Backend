@@ -36,7 +36,7 @@ namespace Health.Infrastructure
             services.AddScoped<IConsultationService, ConsultationService>();
             services.AddScoped<NormalRangeService>();
             services.AddScoped<IUserRepository, UserRepository>();
-
+            services.AddScoped<IConsultationRepository, ConsultationRepository>();
             return services;
         }
     }

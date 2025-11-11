@@ -1,16 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Health.Application.DTOs
 {
     public class ConsultationCreateDto
     {
-        public int UserId { get; set; }
-        // Accept either a JSON string or a strongly typed object serialized to JSON by client
+        // The appointment to which this consultation belongs
+        public int AppointmentId { get; set; }
+
+        // Optional doctor notes or summary
+        public string? DoctorNotes { get; set; }
+
+        // Health metrics JSON payload (BP, sugar, etc.)
         public string HealthValuesJson { get; set; } = "{}";
     }
-
 }

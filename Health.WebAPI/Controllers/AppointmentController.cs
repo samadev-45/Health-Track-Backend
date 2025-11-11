@@ -247,6 +247,7 @@ namespace Health.WebAPI.Controllers
                 return StatusCode(500, ApiResponse<object>.ErrorResponse("Internal Server Error", ex.Message, 500));
             }
         }
+
         [HttpPost("{appointmentId}/respond")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> RespondToAppointment(

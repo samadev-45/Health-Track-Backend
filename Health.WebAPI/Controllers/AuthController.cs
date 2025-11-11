@@ -220,6 +220,18 @@ namespace Health.WebAPI.Controllers
             return Ok(new { token, refreshToken, role = user.Role.ToString(), message = "Login successful." });
         }
 
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public IActionResult Refresh([FromBody] RefreshRequestDto dto)
+        {
+            var result = _authService.RefreshToken(dto);
+            if (!result.Success)
+                return Unauthorized(result);
+
+            return Ok(result);
+        }
+
+
 
     }
 }

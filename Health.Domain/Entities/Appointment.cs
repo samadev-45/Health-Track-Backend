@@ -30,6 +30,7 @@ namespace Health.Domain.Entities
         // Navigations
         public User Patient { get; set; } = null!;
         public User Doctor { get; set; } = null!;
+        public Consultation? Consultation { get; set; }
         public ICollection<AppointmentHistory> History { get; set; } = new List<AppointmentHistory>();
     }
 }

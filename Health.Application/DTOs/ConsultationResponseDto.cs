@@ -1,15 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Health.Application.DTOs
 {
     public class ConsultationResponseDto
     {
         public int ConsultationId { get; set; }
-        public string TrendSummary { get; set; } = ""; // e.g. "↑ sugar, ↓ weight"
+        public int AppointmentId { get; set; }
+        public int UserId { get; set; }
+
+        public string? DoctorNotes { get; set; }
         public string HealthValuesJson { get; set; } = "{}";
+        public string? TrendSummary { get; set; } // optional for phase 2
+        public DateTime CreatedOn { get; set; }
     }
 }
