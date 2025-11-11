@@ -222,6 +222,37 @@ namespace Health.Application.Services
             var (accessToken, refreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
             return (accessToken, refreshToken);
         }
+        public ApiResponse<LoginResponseDto> RefreshToken(RefreshRequestDto dto)
+        {
+            // Check if refresh token exists and matches
+            if (!_activeRefreshTokens.TryGetValue(dto.UserId, out var storedToken))
+                return ApiResponse<LoginResponseDto>.ErrorResponse("No active refresh token found.");
+
+            if (storedToken != dto.RefreshToken)
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid refresh token.");
+
+            // Fetch user
+            var user = _userRepository.Query().FirstOrDefault(u => u.UserId == dto.UserId);
+            if (user == null)
+                return ApiResponse<LoginResponseDto>.ErrorResponse("User not found.");
+
+            // Generate new tokens
+            var (newAccessToken, newRefreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
+
+            // Replace old refresh token
+            _activeRefreshTokens[user.UserId] = newRefreshToken;
+
+            var response = new LoginResponseDto
+            {
+                FullName = user.FullName,
+                Email = user.Email,
+                Role = user.Role.ToString(),
+                Token = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
+
+            return ApiResponse<LoginResponseDto>.SuccessResponse(response, "Token refreshed successfully");
+        }   
 
 
     }

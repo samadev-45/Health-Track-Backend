@@ -5,7 +5,7 @@
 namespace Health.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddConsultation : Migration
+    public partial class InitRebuild : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -80,6 +80,19 @@ namespace Health.Infrastructure.Repositories.Dapper
             return result.ToList();
         }
 
+        public async Task<AppointmentHistory?> GetLastCancelledAppointmentAsync(int patientId, CancellationToken ct = default)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            await connection.OpenAsync(ct);
+
+            return await connection.QueryFirstOrDefaultAsync<AppointmentHistory>(
+                "sp_GetLastCancelledAppointment",
+                new { PatientId = patientId },
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+
 
     }
 }

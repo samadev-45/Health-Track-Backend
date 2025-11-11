@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using Health.Application.Common;
 using Health.Application.Configuration;
 using Health.Application.DTOs;
 using Health.Application.DTOs.Appointments;
+using Health.Application.Helpers;
 using Health.Application.Interfaces;
 using Health.Application.Interfaces.Dapper;
 using Health.Application.Interfaces.EFCore;
@@ -106,6 +108,15 @@ namespace Health.Application.Services
             if (doctor == null || doctor.IsDeleted || doctor.Role != RoleType.Doctor)
                 throw new InvalidOperationException("Doctor not found or inactive.");
 
+            //  Check last cancellation time
+            var lastCancelled = await _readRepo.GetLastCancelledAppointmentAsync(patientId, ct);
+            if (lastCancelled != null &&
+                (DateTime.UtcNow - lastCancelled.ChangedAt).TotalHours < 24)
+            {
+                throw new InvalidOperationException("You cannot book a new appointment within 24 hours after cancelling a previous one.");
+            }
+
+            //  Check duplicate booking
             var isDuplicate = await _writeRepo.IsDuplicateBookingAsync(
                 patientId, dto.DoctorId, dto.AppointmentDate, dto.AppointmentTime, ct);
             if (isDuplicate)
@@ -113,15 +124,13 @@ namespace Health.Application.Services
 
             try
             {
-                // Create appointment
                 var appointmentId = await _writeRepo.CreateAppointmentAsync(patientId, dto, ct);
 
-                // Send notification to doctor
+                // Send notification
                 await _emailSenderService.SendEmailAsync(
                     doctor.Email,
                     "New Appointment Request",
-                    $"Hello Dr. {doctor.FullName},<br/>" +
-                    $"Patient <b>{patient.FullName}</b> has booked an appointment with you on " +
+                    $"Hello Dr. {doctor.FullName},<br/>Patient <b>{patient.FullName}</b> has booked an appointment with you on " +
                     $"<b>{dto.AppointmentDate:dd MMM yyyy}</b> at <b>{dto.AppointmentTime}</b>."
                 );
 
@@ -132,6 +141,7 @@ namespace Health.Application.Services
                 throw new Exception(dbEx.InnerException?.Message ?? dbEx.Message);
             }
         }
+
 
 
 
@@ -406,6 +416,8 @@ namespace Health.Application.Services
                 ChangedAt = h.ChangedAt
             });
         }
+        
+
 
 
 

@@ -35,9 +35,11 @@ namespace Health.Infrastructure.Data
         public DbSet<BloodType> BloodTypes { get; set; }
         public DbSet<Consultation> Consultations { get; set; } = null!;
 
+        public DbSet<Prescription> Prescriptions { get; set; }
+        public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
 
-
-        //  Automatically set CreatedBy, ModifiedBy, DeletedBy
+        //  Automatically
+        //  set CreatedBy, ModifiedBy, DeletedBy
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var userId = GetCurrentUserId();
@@ -172,15 +174,12 @@ namespace Health.Infrastructure.Data
             });
 
             // Appointment
-            
+
             modelBuilder.Entity<Appointment>(b =>
             {
                 b.HasKey(x => x.AppointmentId);
 
-                b.Property(x => x.Status)
-                    .HasConversion<int>();
-                    
-
+                b.Property(x => x.Status).HasConversion<int>();
                 b.Property(x => x.PatientNotes).HasMaxLength(500);
                 b.Property(x => x.DoctorNotes);
                 b.Property(x => x.RejectionReason).HasMaxLength(500);
@@ -197,6 +196,12 @@ namespace Health.Infrastructure.Data
                     .HasForeignKey(x => x.DoctorId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                // ✅ Define one-to-one link with Consultation
+                //b.HasOne(x => x.Consultation)
+                //    .WithOne(c => c.Appointment)
+                //    .HasForeignKey<Consultation>(c => c.AppointmentId)
+                //    .OnDelete(DeleteBehavior.Cascade);
+
                 // Prevent duplicate bookings
                 b.HasIndex(x => new { x.DoctorId, x.AppointmentDate, x.AppointmentTime })
                  .IsUnique()
@@ -208,6 +213,7 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.Status);
                 b.HasIndex(x => x.IsDeleted);
             });
+
 
 
             // AppointmentHistory
@@ -236,21 +242,32 @@ namespace Health.Infrastructure.Data
             // FileStorage
             modelBuilder.Entity<FileStorage>(b =>
             {
+                b.ToTable("FileStorage");
                 b.HasKey(x => x.FileStorageId);
 
-                b.Property(x => x.FileName).HasMaxLength(255).IsRequired();
-                b.Property(x => x.FileExtension).HasMaxLength(10).IsRequired();
+                b.Property(x => x.FileName).IsRequired().HasMaxLength(255);
+                b.Property(x => x.FileExtension).IsRequired().HasMaxLength(50);
+                b.Property(x => x.ContentType).HasMaxLength(200);
                 b.Property(x => x.FileData).IsRequired();
-                b.Property(x => x.ContentType).HasMaxLength(100);
+                b.Property(x => x.FileSize);
 
+                // ✅ Link to Consultation
+                b.HasOne(x => x.Consultation)
+                 .WithMany(c => c.Files) // this allows Consultation.Files navigation
+                 .HasForeignKey(x => x.ConsultationId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                // ✅ Link to User (uploaded by)
                 b.HasOne(x => x.UploadedByUser)
                  .WithMany(u => u.UploadedFiles)
                  .HasForeignKey(x => x.UploadedByUserId)
                  .OnDelete(DeleteBehavior.Restrict);
 
+                b.HasIndex(x => x.ConsultationId);
                 b.HasIndex(x => x.UploadedByUserId);
                 b.HasIndex(x => x.IsDeleted);
             });
+
 
             // MedicalRecord
             modelBuilder.Entity<MedicalRecord>(b =>
@@ -461,17 +478,72 @@ namespace Health.Infrastructure.Data
             });
             modelBuilder.Entity<Consultation>(b =>
             {
+                b.ToTable("Consultation");
                 b.HasKey(x => x.ConsultationId);
-                b.Property(x => x.HealthValuesJson).IsRequired().HasColumnType("nvarchar(max)");
-                b.Property(x => x.CreatedAt).IsRequired();
 
-                b.HasOne(x => x.User)
-                 .WithMany(u => u.Consultations)
-                 .HasForeignKey(x => x.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);
+                b.HasIndex(x => x.AppointmentId).IsUnique();
 
-                b.HasIndex(x => x.UserId);
+                b.HasOne(x => x.Appointment)
+                 .WithOne(a => a.Consultation)
+                 .HasForeignKey<Consultation>(c => c.AppointmentId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                // Doctor
+                b.HasOne(x => x.Doctor)
+                 .WithMany()
+                 .HasForeignKey(x => x.DoctorId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                // Patient
+                b.HasOne(x => x.Patient)
+                 .WithMany()
+                 .HasForeignKey(x => x.PatientId)
+                 .OnDelete(DeleteBehavior.Restrict);
+                b.HasMany(x => x.Files)
+        .WithOne(f => f.Consultation)
+        .HasForeignKey(f => f.ConsultationId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+                // ✅ One Consultation can have many Prescriptions
+                b.HasMany(x => x.Prescriptions)
+                    .WithOne(p => p.Consultation)
+                    .HasForeignKey(p => p.ConsultationId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<Prescription>(b =>
+            {
+                b.ToTable("Prescriptions");
+                b.HasKey(x => x.PrescriptionId);
+                b.Property(x => x.Notes).HasMaxLength(4000);
+                b.Property(x => x.CreatedAt).IsRequired();
+                b.HasIndex(x => x.ConsultationId);
+
+                b.HasOne(x => x.Consultation)
+                 .WithMany()
+                 .HasForeignKey(x => x.ConsultationId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // PrescriptionItem
+            modelBuilder.Entity<PrescriptionItem>(b =>
+            {
+                b.ToTable("PrescriptionItems");
+                b.HasKey(x => x.PrescriptionItemId);
+                b.Property(x => x.Medicine).IsRequired().HasMaxLength(500);
+                b.Property(x => x.Strength).HasMaxLength(200);
+                b.Property(x => x.Dose).HasMaxLength(200);
+                b.Property(x => x.Frequency).HasMaxLength(200);
+                b.Property(x => x.Route).HasMaxLength(200);
+                b.HasIndex(x => x.PrescriptionId);
+
+                b.HasOne(x => x.Prescription)
+                 .WithMany(p => p.Items)
+                 .HasForeignKey(x => x.PrescriptionId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            
 
 
 

@@ -32,6 +32,17 @@ namespace Health.Application.Helpers
                 .ForMember(dest => dest.DoctorName, opt => opt.MapFrom(src => src.Doctor.FullName))
                 .ForMember(dest => dest.PatientName, opt => opt.MapFrom(src => src.Patient.FullName))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+            CreateMap<Consultation, ConsultationResponseDto>()
+                .ForMember(dest => dest.CreatedOn, opt => opt.MapFrom(src => src.CreatedOn));
+
+            // Map from DTO → Entity
+            CreateMap<ConsultationCreateDto, Consultation>()
+                .ForMember(dest => dest.AppointmentId, opt => opt.MapFrom(src => src.AppointmentId))
+                .ForMember(dest => dest.DoctorNotes, opt => opt.MapFrom(src => src.DoctorNotes))
+                .ForMember(dest => dest.HealthValuesJson, opt => opt.MapFrom(src => src.HealthValuesJson))
+                // PatientId will be assigned inside the service (from Appointment)
+                .ForMember(dest => dest.PatientId, opt => opt.Ignore());
         }
     }
 }

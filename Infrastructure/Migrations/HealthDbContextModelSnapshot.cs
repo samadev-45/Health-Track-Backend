@@ -201,9 +201,7 @@ namespace Health.Infrastructure.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("Status")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
+                        .HasColumnType("int");
 
                     b.HasKey("AppointmentId");
 
@@ -377,8 +375,14 @@ namespace Health.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConsultationId"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("Advice")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ChiefComplaint")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
@@ -392,11 +396,26 @@ namespace Health.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Diagnosis")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DoctorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DoctorNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("FollowUpDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("HealthValuesJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPrescriptionGenerated")
                         .HasColumnType("bit");
 
                     b.Property<int?>("ModifiedBy")
@@ -405,14 +424,27 @@ namespace Health.Infrastructure.Migrations
                     b.Property<DateTime?>("ModifiedOn")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserId")
+                    b.Property<int>("PatientId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("ConsultationId");
 
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("PatientId");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Consultations");
+                    b.ToTable("Consultation", (string)null);
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.FileStorage", b =>
@@ -423,9 +455,12 @@ namespace Health.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FileStorageId"));
 
+                    b.Property<int?>("ConsultationId")
+                        .HasColumnType("int");
+
                     b.Property<string>("ContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
@@ -445,8 +480,8 @@ namespace Health.Infrastructure.Migrations
 
                     b.Property<string>("FileExtension")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -470,11 +505,13 @@ namespace Health.Infrastructure.Migrations
 
                     b.HasKey("FileStorageId");
 
+                    b.HasIndex("ConsultationId");
+
                     b.HasIndex("IsDeleted");
 
                     b.HasIndex("UploadedByUserId");
 
-                    b.ToTable("FileStorages");
+                    b.ToTable("FileStorage", (string)null);
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.HealthMetric", b =>
@@ -874,6 +911,126 @@ namespace Health.Infrastructure.Migrations
                     b.HasIndex("UserId", "Purpose", "Expiry", "Used");
 
                     b.ToTable("OtpVerifications");
+                });
+
+            modelBuilder.Entity("Health.Domain.Entities.Prescription", b =>
+                {
+                    b.Property<int>("PrescriptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrescriptionId"));
+
+                    b.Property<int>("ConsultationId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConsultationId1")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ModifiedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("PrescriptionId");
+
+                    b.HasIndex("ConsultationId");
+
+                    b.HasIndex("ConsultationId1");
+
+                    b.ToTable("Prescriptions", (string)null);
+                });
+
+            modelBuilder.Entity("Health.Domain.Entities.PrescriptionItem", b =>
+                {
+                    b.Property<int>("PrescriptionItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrescriptionItemId"));
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Dose")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("DurationDays")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Frequency")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Medicine")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ModifiedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PrescriptionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Route")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Strength")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("PrescriptionItemId");
+
+                    b.HasIndex("PrescriptionId");
+
+                    b.ToTable("PrescriptionItems", (string)null);
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.RefreshToken", b =>
@@ -1292,22 +1449,49 @@ namespace Health.Infrastructure.Migrations
 
             modelBuilder.Entity("Health.Domain.Entities.Consultation", b =>
                 {
-                    b.HasOne("Health.Domain.Entities.User", "User")
-                        .WithMany("Consultations")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("Health.Domain.Entities.Appointment", "Appointment")
+                        .WithOne("Consultation")
+                        .HasForeignKey("Health.Domain.Entities.Consultation", "AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.HasOne("Health.Domain.Entities.User", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Health.Domain.Entities.User", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Health.Domain.Entities.User", null)
+                        .WithMany("Consultations")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.FileStorage", b =>
                 {
+                    b.HasOne("Health.Domain.Entities.Consultation", "Consultation")
+                        .WithMany("Files")
+                        .HasForeignKey("ConsultationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Health.Domain.Entities.User", "UploadedByUser")
                         .WithMany("UploadedFiles")
                         .HasForeignKey("UploadedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Consultation");
 
                     b.Navigation("UploadedByUser");
                 });
@@ -1400,6 +1584,32 @@ namespace Health.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Health.Domain.Entities.Prescription", b =>
+                {
+                    b.HasOne("Health.Domain.Entities.Consultation", "Consultation")
+                        .WithMany()
+                        .HasForeignKey("ConsultationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Health.Domain.Entities.Consultation", null)
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("ConsultationId1");
+
+                    b.Navigation("Consultation");
+                });
+
+            modelBuilder.Entity("Health.Domain.Entities.PrescriptionItem", b =>
+                {
+                    b.HasOne("Health.Domain.Entities.Prescription", "Prescription")
+                        .WithMany("Items")
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Prescription");
+                });
+
             modelBuilder.Entity("Health.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("Health.Domain.Entities.User", "User")
@@ -1439,12 +1649,26 @@ namespace Health.Infrastructure.Migrations
 
             modelBuilder.Entity("Health.Domain.Entities.Appointment", b =>
                 {
+                    b.Navigation("Consultation");
+
                     b.Navigation("History");
+                });
+
+            modelBuilder.Entity("Health.Domain.Entities.Consultation", b =>
+                {
+                    b.Navigation("Files");
+
+                    b.Navigation("Prescriptions");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.Medication", b =>
                 {
                     b.Navigation("Reminders");
+                });
+
+            modelBuilder.Entity("Health.Domain.Entities.Prescription", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.Unit", b =>
