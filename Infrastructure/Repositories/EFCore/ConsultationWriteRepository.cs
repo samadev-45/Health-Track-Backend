@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace Health.Infrastructure.Repositories.EFCore
 {
-    public class ConsultationRepository : GenericRepository<Consultation>, IConsultationRepository
+    public class ConsultationWriteRepository : GenericRepository<Consultation>, IConsultationWriteRepository
     {
-        public ConsultationRepository(HealthDbContext context) : base(context) { }
+        public ConsultationWriteRepository(HealthDbContext context) : base(context) { }
 
         public async Task<IEnumerable<Consultation>> GetByUserIdAsync(int userId, CancellationToken ct = default)
         {
