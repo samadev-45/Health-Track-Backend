@@ -8,7 +8,9 @@ using Health.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 using System.Text;
+
 
 namespace Health.WebAPI
 {
@@ -57,7 +59,7 @@ namespace Health.WebAPI
             }
             });
             });
-
+            QuestPDF.Settings.License = LicenseType.Community;
 
             // AutoMapper
             builder.Services.AddAutoMapper(typeof(MappingProfile));

@@ -7,9 +7,11 @@ using Health.Infrastructure.Repositories;
 using Health.Infrastructure.Repositories.Dapper;
 using Health.Infrastructure.Repositories.EFCore;
 using Health.Infrastructure.Services;
+using Health.Infrastructure.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Health.Application.Common;
 
 namespace Health.Infrastructure
 {
@@ -36,9 +38,9 @@ namespace Health.Infrastructure
             services.AddScoped<IConsultationService, ConsultationService>();
             services.AddScoped<NormalRangeService>();
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IConsultationWriteRepository, ConsultationWriteRepository>();
+            services.AddScoped<IConsultationWriteRepository, ConsultationRepository>();
             services.AddScoped<IConsultationReadRepository, ConsultationReadRepository>();
-
+            services.AddScoped<IPdfGenerator, QuestPdfGenerator>();
             return services;
         }
     }

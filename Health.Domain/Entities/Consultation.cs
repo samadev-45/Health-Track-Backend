@@ -16,7 +16,8 @@ namespace Health.Domain.Entities
         public string? Advice { get; set; }
         public string? DoctorNotes { get; set; }
 
-        public string HealthValuesJson { get; set; } = "{}";
+        public Dictionary<string, object>? HealthValues { get; set; } = new();
+
         public DateTime? FollowUpDate { get; set; }
 
         public ConsultationStatus Status { get; set; } = ConsultationStatus.Draft;
