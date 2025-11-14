@@ -1,9 +1,10 @@
 ﻿using Health.Domain.Common;
 using Health.Domain.Entities;
+using Health.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using Health.Domain.Enums;
+using System.Text.Json;
 
 namespace Health.Infrastructure.Data
 {
@@ -488,28 +489,36 @@ namespace Health.Infrastructure.Data
                  .HasForeignKey<Consultation>(c => c.AppointmentId)
                  .OnDelete(DeleteBehavior.Restrict);
 
-                // Doctor
                 b.HasOne(x => x.Doctor)
                  .WithMany()
                  .HasForeignKey(x => x.DoctorId)
                  .OnDelete(DeleteBehavior.Restrict);
 
-                // Patient
                 b.HasOne(x => x.Patient)
                  .WithMany()
                  .HasForeignKey(x => x.PatientId)
                  .OnDelete(DeleteBehavior.Restrict);
-                b.HasMany(x => x.Files)
-        .WithOne(f => f.Consultation)
-        .HasForeignKey(f => f.ConsultationId)
-        .OnDelete(DeleteBehavior.Cascade);
 
-                // ✅ One Consultation can have many Prescriptions
+                b.HasMany(x => x.Files)
+                 .WithOne(f => f.Consultation)
+                 .HasForeignKey(f => f.ConsultationId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
                 b.HasMany(x => x.Prescriptions)
-                    .WithOne(p => p.Consultation)
-                    .HasForeignKey(p => p.ConsultationId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                 .WithOne(p => p.Consultation)
+                 .HasForeignKey(p => p.ConsultationId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                // ✅ Proper JSON object handling using Dictionary<string, object>
+                b.Property(x => x.HealthValues)
+ .HasColumnType("nvarchar(max)")
+ .HasConversion(
+     v => JsonSerializer.Serialize(v, JsonSerializerOptions.Default),
+     v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, JsonSerializerOptions.Default)
+ );
+
             });
+
 
             modelBuilder.Entity<Prescription>(b =>
             {

@@ -40,9 +40,12 @@ namespace Health.Application.Helpers
             CreateMap<ConsultationCreateDto, Consultation>()
                 .ForMember(dest => dest.AppointmentId, opt => opt.MapFrom(src => src.AppointmentId))
                 .ForMember(dest => dest.DoctorNotes, opt => opt.MapFrom(src => src.DoctorNotes))
-                .ForMember(dest => dest.HealthValuesJson, opt => opt.MapFrom(src => src.HealthValuesJson))
+                .ForMember(dest => dest.HealthValues, opt => opt.MapFrom(src => src.HealthValues))
+
                 // PatientId will be assigned inside the service (from Appointment)
                 .ForMember(dest => dest.PatientId, opt => opt.Ignore());
+
+
         }
     }
 }

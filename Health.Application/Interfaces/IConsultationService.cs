@@ -29,5 +29,7 @@ namespace Health.Application.Interfaces
 
         // Get full consultation details (consultation + prescription + files)
         Task<ConsultationDetailsDto?> GetConsultationDetailsAsync(int consultationId, CancellationToken ct = default);
+        Task<FileDownloadDto> DownloadFileAsync(int fileId, CancellationToken ct = default);
+
     }
 }

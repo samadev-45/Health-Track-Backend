@@ -12,7 +12,8 @@ namespace Health.Application.DTOs
         public string? Diagnosis { get; set; }
         public string? Advice { get; set; }
         public string? DoctorNotes { get; set; }
-        public string HealthValuesJson { get; set; } = "{}";
+        public Dictionary<string, object>? HealthValues { get; set; }
+
         public DateTime? FollowUpDate { get; set; }
     }
 }

@@ -32,7 +32,8 @@ namespace Health.Application.DTOs
         /// <summary>
         /// Health metric JSON payload (BP, sugar, etc.).
         /// </summary>
-        public string HealthValuesJson { get; set; } = "{}";
+        public Dictionary<string, object>? HealthValues { get; set; }
+
 
         /// <summary>
         /// Optional follow-up appointment date.
