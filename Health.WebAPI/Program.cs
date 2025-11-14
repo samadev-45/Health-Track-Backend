@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Health.Application.Common;
 using Health.Application.Configuration;
 using Health.Application.Helpers;
 using Health.Application.Interfaces;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
 using System.Text;
+using System.Text.Json;
 
 
 namespace Health.WebAPI
@@ -64,7 +66,19 @@ namespace Health.WebAPI
 
             // AutoMapper
             builder.Services.AddAutoMapper(typeof(MappingProfile));
+            var rangesPath = Path.Combine(builder.Environment.ContentRootPath, "Data", "NormalRanges.json");
 
+            if (!File.Exists(rangesPath))
+                throw new FileNotFoundException("NormalRanges.json missing.", rangesPath);
+
+            var json = File.ReadAllText(rangesPath);
+            var normalRanges = JsonSerializer.Deserialize<Dictionary<string, decimal>>(json)!;
+
+            // Register as Singleton
+            builder.Services.AddSingleton(normalRanges);
+
+            // Register HealthMetricEngine using the injected dictionary
+            builder.Services.AddSingleton<HealthMetricEngine>();
 
             // in Program.cs or Startup.cs
             builder.Services.Configure<AppointmentPolicyConfig>(configuration.GetSection("AppointmentPolicy"));

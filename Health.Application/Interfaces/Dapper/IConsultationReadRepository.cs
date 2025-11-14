@@ -1,5 +1,6 @@
-﻿using Health.Application.DTOs;
-using Health.Application.DTOs.Common;
+﻿using Health.Application.DTOs.Common;
+using Health.Application.DTOs.Consultation;
+using Health.Application.DTOs.File;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

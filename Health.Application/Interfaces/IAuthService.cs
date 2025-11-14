@@ -1,5 +1,5 @@
 ﻿using Health.Application.Common;
-using Health.Application.DTOs;
+using Health.Application.DTOs.Auth;
 using Health.Domain.Entities;
 
 

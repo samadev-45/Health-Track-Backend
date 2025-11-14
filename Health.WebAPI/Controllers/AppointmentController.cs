@@ -1,6 +1,5 @@
 ﻿using Health.Application.Common;
-using Health.Application.DTOs;
-using Health.Application.DTOs.Appointments;
+using Health.Application.DTOs.Appointment;
 using Health.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

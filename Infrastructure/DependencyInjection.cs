@@ -41,6 +41,8 @@ namespace Health.Infrastructure
             services.AddScoped<IConsultationWriteRepository, ConsultationRepository>();
             services.AddScoped<IConsultationReadRepository, ConsultationReadRepository>();
             services.AddScoped<IPdfGenerator, QuestPdfGenerator>();
+            services.AddSingleton<Application.Common.HealthMetricEngine>();
+
             return services;
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Health.Application.Common;
+using Health.Application.DTOs.Prescription;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;

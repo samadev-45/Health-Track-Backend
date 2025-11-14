@@ -1,5 +1,8 @@
 ﻿using Health.Application.DTOs;
 using Health.Application.DTOs.Common;
+using Health.Application.DTOs.Consultation;
+using Health.Application.DTOs.File;
+using Health.Application.DTOs.Prescription;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -30,6 +33,14 @@ namespace Health.Application.Interfaces
         // Get full consultation details (consultation + prescription + files)
         Task<ConsultationDetailsDto?> GetConsultationDetailsAsync(int consultationId, CancellationToken ct = default);
         Task<FileDownloadDto> DownloadFileAsync(int fileId, CancellationToken ct = default);
+        // Prescription management
+        Task<PrescriptionDto> CreateOrGetPrescriptionAsync(int consultationId, PrescriptionCreateDto dto, CancellationToken ct = default);
+        Task<PrescriptionDto?> GetPrescriptionByConsultationAsync(int consultationId, CancellationToken ct = default);
+
+        // Prescription items
+        Task<PrescriptionItemDto> AddPrescriptionItemAsync(int prescriptionId, PrescriptionItemCreateDto dto, CancellationToken ct = default);
+        Task<PrescriptionItemDto> UpdatePrescriptionItemAsync(int itemId, PrescriptionItemUpdateDto dto, CancellationToken ct = default);
+        Task DeletePrescriptionItemAsync(int itemId, CancellationToken ct = default);
 
     }
 }

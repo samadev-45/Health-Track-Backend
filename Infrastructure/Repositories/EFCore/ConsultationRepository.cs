@@ -61,5 +61,49 @@ namespace Health.Infrastructure.Repositories.EFCore
                 .FirstOrDefaultAsync(f => f.FileStorageId == fileId && !f.IsDeleted, ct);
         }
 
+        public async Task AddPrescriptionItemAsync(PrescriptionItem item, CancellationToken ct = default)
+        {
+            await _context.PrescriptionItems.AddAsync(item, ct);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        public async Task UpdatePrescriptionItemAsync(PrescriptionItem item, CancellationToken ct = default)
+        {
+            _context.PrescriptionItems.Update(item);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        public async Task DeletePrescriptionItemAsync(int prescriptionItemId, CancellationToken ct = default)
+        {
+            var item = await _context.PrescriptionItems.FirstOrDefaultAsync(i => i.PrescriptionItemId == prescriptionItemId && !i.IsDeleted, ct);
+            if (item == null) return;
+            item.IsDeleted = true;
+            item.DeletedOn = DateTime.UtcNow;
+            await _context.SaveChangesAsync(ct);
+        }
+
+        public async Task<Prescription?> GetPrescriptionByConsultationIdAsync(int consultationId, CancellationToken ct = default)
+        {
+            return await _context.Prescriptions
+                .Include(p => p.Items)
+                .FirstOrDefaultAsync(p => p.ConsultationId == consultationId && !p.IsDeleted, ct);
+        }
+
+        public async Task<PrescriptionItem?> GetPrescriptionItemByIdAsync(int itemId, CancellationToken ct = default)
+        {
+            return await _context.PrescriptionItems
+                .FirstOrDefaultAsync(i => i.PrescriptionItemId == itemId && !i.IsDeleted, ct);
+        }
+
+        public async Task<Prescription?> GetPrescriptionByIdAsync(int prescriptionId, CancellationToken ct = default)
+        {
+            return await _context.Prescriptions
+                .Include(p => p.Items)
+                .Include(p => p.Consultation)
+                .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId && !p.IsDeleted, ct);
+        }
+
+
+
     }
 }

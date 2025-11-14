@@ -14,6 +14,16 @@ namespace Health.Application.Interfaces.EFCore
         Task<Consultation?> GetByIdAsync(int consultationId, CancellationToken ct = default);
         Task UpdateAsync(Consultation consultation, CancellationToken ct = default);
         Task<FileStorage?> GetFileByIdAsync(int fileId, CancellationToken ct = default);
+        
+        Task AddPrescriptionItemAsync(PrescriptionItem item, CancellationToken ct = default);
+        Task UpdatePrescriptionItemAsync(PrescriptionItem item, CancellationToken ct = default);
+        Task DeletePrescriptionItemAsync(int prescriptionItemId, CancellationToken ct = default);
+        Task<Prescription?> GetPrescriptionByConsultationIdAsync(int consultationId, CancellationToken ct = default);
+        Task<PrescriptionItem?> GetPrescriptionItemByIdAsync(int itemId, CancellationToken ct = default);
+
+        Task<Prescription?> GetPrescriptionByIdAsync(int prescriptionId, CancellationToken ct = default);
+
+
 
     }
 }

@@ -485,38 +485,50 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.AppointmentId).IsUnique();
 
                 b.HasOne(x => x.Appointment)
-                 .WithOne(a => a.Consultation)
-                 .HasForeignKey<Consultation>(c => c.AppointmentId)
-                 .OnDelete(DeleteBehavior.Restrict);
+                    .WithOne(a => a.Consultation)
+                    .HasForeignKey<Consultation>(c => c.AppointmentId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 b.HasOne(x => x.Doctor)
-                 .WithMany()
-                 .HasForeignKey(x => x.DoctorId)
-                 .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany()
+                    .HasForeignKey(x => x.DoctorId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 b.HasOne(x => x.Patient)
-                 .WithMany()
-                 .HasForeignKey(x => x.PatientId)
-                 .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany()
+                    .HasForeignKey(x => x.PatientId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 b.HasMany(x => x.Files)
-                 .WithOne(f => f.Consultation)
-                 .HasForeignKey(f => f.ConsultationId)
-                 .OnDelete(DeleteBehavior.Cascade);
+                    .WithOne(f => f.Consultation)
+                    .HasForeignKey(f => f.ConsultationId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 b.HasMany(x => x.Prescriptions)
-                 .WithOne(p => p.Consultation)
-                 .HasForeignKey(p => p.ConsultationId)
-                 .OnDelete(DeleteBehavior.Cascade);
+                    .WithOne(p => p.Consultation)
+                    .HasForeignKey(p => p.ConsultationId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-                // ✅ Proper JSON object handling using Dictionary<string, object>
+                // -----------------------------------------
+                //  JSON CONVERSION FOR Dictionary<string, decimal>
+                // -----------------------------------------
                 b.Property(x => x.HealthValues)
- .HasColumnType("nvarchar(max)")
- .HasConversion(
-     v => JsonSerializer.Serialize(v, JsonSerializerOptions.Default),
-     v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, JsonSerializerOptions.Default)
- );
+                    .HasColumnType("nvarchar(max)")
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            WriteIndented = false
+                        }),
+                        v => JsonSerializer.Deserialize<Dictionary<string, decimal>>(v, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        })!
+                    );
 
+                
+                b.Property(x => x.TrendSummary)
+                    .HasMaxLength(500); // or nvarchar(max) if long text
             });
 
 

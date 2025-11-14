@@ -1,5 +1,4 @@
-﻿using Health.Application.DTOs;
-using Health.Application.DTOs.Appointments;
+﻿using Health.Application.DTOs.Appointment;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;

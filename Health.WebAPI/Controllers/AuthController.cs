@@ -1,4 +1,4 @@
-﻿using Health.Application.DTOs;
+﻿using Health.Application.DTOs.Auth;
 using Health.Application.Interfaces;
 using Health.Domain.Entities;
 using Health.Domain.Enums;
