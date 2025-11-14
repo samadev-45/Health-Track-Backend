@@ -59,6 +59,7 @@ namespace Health.WebAPI
             }
             });
             });
+            //QuestPdf Free
             QuestPDF.Settings.License = LicenseType.Community;
 
             // AutoMapper
