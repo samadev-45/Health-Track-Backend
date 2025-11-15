@@ -1,5 +1,6 @@
 ﻿using Health.Domain.Common;
 using System;
+using System.Collections.Generic;
 
 namespace Health.Domain.Entities
 {
@@ -16,19 +17,23 @@ namespace Health.Domain.Entities
         public string? Advice { get; set; }
         public string? DoctorNotes { get; set; }
 
+        // Final chosen property after resolving merge conflict
         public Dictionary<string, decimal>? HealthValues { get; set; } = new();
 
         public DateTime? FollowUpDate { get; set; }
 
         public ConsultationStatus Status { get; set; } = ConsultationStatus.Draft;
         public bool IsPrescriptionGenerated { get; set; } = false;
+
         public string? TrendSummary { get; set; }
+
         // Navigation
         public Appointment? Appointment { get; set; }
 
         public User? Doctor { get; set; }
         public User? Patient { get; set; }
-        public ICollection<FileStorage> Files { get; set; }=new List<FileStorage>();
+
+        public ICollection<FileStorage> Files { get; set; } = new List<FileStorage>();
         public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
     }
 }

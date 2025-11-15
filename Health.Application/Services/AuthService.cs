@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using AutoMapper;
 using Health.Application.Common;
+
 using Health.Application.Helpers;
 using Health.Application.Interfaces;
 using Health.Domain.Entities;
@@ -13,7 +14,9 @@ using Health.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Health.Application.Interfaces.EFCore;
+
 using Health.Application.DTOs.Auth;
+
 
 namespace Health.Application.Services
 {

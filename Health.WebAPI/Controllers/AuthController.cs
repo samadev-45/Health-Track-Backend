@@ -66,7 +66,23 @@ namespace Health.WebAPI.Controllers
             if (!response.Success)
                 return Unauthorized(response);
 
+            if (response.Success && response.Data is LoginResponseDto loginData)
+            {
+                // Set HttpOnly access token cookie
+                Response.Cookies.Append("access_token", loginData.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddHours(1)
+                });
+
+                // Remove token from response body to avoid exposing it
+                loginData.Token = null!;
+            }
+
             return Ok(response);
+
         }
 
         [HttpPost("request-email-Otp")]
@@ -217,7 +233,22 @@ namespace Health.WebAPI.Controllers
                 return Ok(new { status = user.Status.ToString(), message = "Email verified. Awaiting admin approval." });
 
             var (token, refreshToken) = _authService.GenerateTokensForUser(user);
-            return Ok(new { token, refreshToken, role = user.Role.ToString(), message = "Login successful." });
+            // Set HttpOnly access token
+            Response.Cookies.Append("access_token", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddHours(1)
+            });
+
+            return Ok(new
+            {
+                role = user.Role.ToString(),
+                refreshToken,            // still sent in body
+                message = "Login successful."
+            });
+
         }
 
         [HttpPost("refresh")]
@@ -228,8 +259,24 @@ namespace Health.WebAPI.Controllers
             if (!result.Success)
                 return Unauthorized(result);
 
+            // result.Data should contain new token + refresh token
+            if (result.Data is LoginResponseDto refreshData && refreshData.Token != null)
+            {
+                Response.Cookies.Append("access_token", refreshData.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddHours(1)
+                });
+
+                // Remove the token from the response body
+                refreshData.Token = null!;
+            }
+
             return Ok(result);
         }
+
 
 
 

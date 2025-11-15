@@ -214,9 +214,9 @@ namespace Health.WebAPI.Controllers
             }
         }
 
-        
+        // ----------------------------------------------------------
         // COMPLETE (DOCTOR)
-        
+        // ----------------------------------------------------------
         [HttpPost("{appointmentId}/complete")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> CompleteAppointment(
@@ -247,6 +247,9 @@ namespace Health.WebAPI.Controllers
             }
         }
 
+        // ----------------------------------------------------------
+        // RESPOND (DOCTOR)
+        // ----------------------------------------------------------
         [HttpPost("{appointmentId}/respond")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> RespondToAppointment(
@@ -277,13 +280,18 @@ namespace Health.WebAPI.Controllers
                 return StatusCode(500, ApiResponse<object>.ErrorResponse("Internal Server Error", ex.Message, 500));
             }
         }
+
+        // ----------------------------------------------------------
+        // HISTORY (ADMIN)
+        // ----------------------------------------------------------
         [HttpGet("{appointmentId}/history")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAppointmentHistory(int appointmentId, CancellationToken ct = default)
+        public async Task<IActionResult> GetAppointmentHistory(
+            int appointmentId,
+            CancellationToken ct = default)
         {
             var history = await _appointmentService.GetAppointmentHistoryAsync(appointmentId, ct);
             return Ok(ApiResponse<object>.SuccessResponse(history, "Appointment history fetched successfully"));
         }
-
     }
 }

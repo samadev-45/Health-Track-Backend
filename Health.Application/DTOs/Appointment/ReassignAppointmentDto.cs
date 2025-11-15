@@ -1,5 +1,4 @@
-﻿// Health.Application.DTOs.Appointments/ReassignAppointmentDto.cs
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace Health.Application.DTOs.Appointment

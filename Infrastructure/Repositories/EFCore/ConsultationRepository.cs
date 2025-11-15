@@ -2,6 +2,7 @@
 using Health.Domain.Entities;
 using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -43,7 +44,7 @@ namespace Health.Infrastructure.Repositories.EFCore
         {
             return await _context.Consultations
                 .Include(c => c.Prescriptions)
-                .ThenInclude(p => p.Items)
+                    .ThenInclude(p => p.Items)
                 .Include(c => c.Patient)
                 .Include(c => c.Doctor)
                 .FirstOrDefaultAsync(c => c.ConsultationId == consultationId && !c.IsDeleted, ct);
@@ -54,12 +55,17 @@ namespace Health.Infrastructure.Repositories.EFCore
             _context.Consultations.Update(consultation);
             await _context.SaveChangesAsync(ct);
         }
+
         public async Task<FileStorage?> GetFileByIdAsync(int fileId, CancellationToken ct = default)
         {
             return await _context.FileStorages
                 .Include(f => f.Consultation)
                 .FirstOrDefaultAsync(f => f.FileStorageId == fileId && !f.IsDeleted, ct);
         }
+
+        // -----------------------------------------------------
+        // PRESCRIPTION ITEM OPERATIONS (kept from HEAD)
+        // -----------------------------------------------------
 
         public async Task AddPrescriptionItemAsync(PrescriptionItem item, CancellationToken ct = default)
         {
@@ -75,10 +81,14 @@ namespace Health.Infrastructure.Repositories.EFCore
 
         public async Task DeletePrescriptionItemAsync(int prescriptionItemId, CancellationToken ct = default)
         {
-            var item = await _context.PrescriptionItems.FirstOrDefaultAsync(i => i.PrescriptionItemId == prescriptionItemId && !i.IsDeleted, ct);
+            var item = await _context.PrescriptionItems
+                .FirstOrDefaultAsync(i => i.PrescriptionItemId == prescriptionItemId && !i.IsDeleted, ct);
+
             if (item == null) return;
+
             item.IsDeleted = true;
             item.DeletedOn = DateTime.UtcNow;
+
             await _context.SaveChangesAsync(ct);
         }
 
@@ -102,8 +112,5 @@ namespace Health.Infrastructure.Repositories.EFCore
                 .Include(p => p.Consultation)
                 .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId && !p.IsDeleted, ct);
         }
-
-
-
     }
 }

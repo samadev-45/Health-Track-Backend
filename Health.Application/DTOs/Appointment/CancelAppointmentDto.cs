@@ -1,5 +1,4 @@
-﻿// Health.Application.DTOs.Appointments/CancelAppointmentDto.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Health.Application.DTOs.Appointment
 {
@@ -11,4 +10,4 @@ namespace Health.Application.DTOs.Appointment
         [Required]
         public string Reason { get; set; } = string.Empty;
     }
-}
+}   

@@ -333,14 +333,18 @@ namespace Health.Application.Services
     ConsultationUpdateDto dto,
     CancellationToken ct = default)
         {
+            // 1. Load consultation
             var consultation = await _consultationRepo.GetByIdAsync(consultationId, ct)
                 ?? throw new InvalidOperationException("Consultation not found.");
 
+            // 2. Only the assigned doctor can update
             EnsureDoctorOwnership(consultation.DoctorId);
 
+            // 3. Only editable if status = Draft
             if (consultation.Status != ConsultationStatus.Draft)
                 throw new InvalidOperationException("Only draft consultations can be edited.");
 
+            // 4. Optional: enforce 24-hour editing window
             if (consultation.CreatedOn.AddHours(24) < DateTime.UtcNow)
                 throw new InvalidOperationException("Consultation can no longer be edited (24-hour window expired).");
 
@@ -348,6 +352,8 @@ namespace Health.Application.Services
             consultation.Diagnosis = dto.Diagnosis ?? consultation.Diagnosis;
             consultation.Advice = dto.Advice ?? consultation.Advice;
             consultation.DoctorNotes = dto.DoctorNotes ?? consultation.DoctorNotes;
+            consultation.HealthValues = dto.HealthValues ?? consultation.HealthValues;
+
             consultation.FollowUpDate = dto.FollowUpDate ?? consultation.FollowUpDate;
 
             if (dto.HealthValues != null)
@@ -359,8 +365,10 @@ namespace Health.Application.Services
             consultation.ModifiedOn = DateTime.UtcNow;
             consultation.ModifiedBy = consultation.DoctorId;
 
+            // 6. Save changes
             await _consultationRepo.UpdateAsync(consultation, ct);
 
+            // 7. Return mapped response
             return _mapper.Map<ConsultationResponseDto>(consultation);
         }
 

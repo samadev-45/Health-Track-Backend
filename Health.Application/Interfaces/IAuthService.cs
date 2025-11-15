@@ -2,7 +2,6 @@
 using Health.Application.DTOs.Auth;
 using Health.Domain.Entities;
 
-
 namespace Health.Application.Interfaces
 {
     public interface IAuthService

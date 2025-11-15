@@ -6,8 +6,12 @@ using Health.Application.DTOs.Prescription;
 using Health.Application.Interfaces.Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Health.Infrastructure.Repositories.Dapper
 {
@@ -35,7 +39,15 @@ namespace Health.Infrastructure.Repositories.Dapper
 
             using var multi = await conn.QueryMultipleAsync(
                 "sp_GetConsultationsByDoctor",
-                new { DoctorId = doctorId, Status = status, FromDate = fromDate, ToDate = toDate, Page = page, PageSize = pageSize },
+                new
+                {
+                    DoctorId = doctorId,
+                    Status = status,
+                    FromDate = fromDate,
+                    ToDate = toDate,
+                    Page = page,
+                    PageSize = pageSize
+                },
                 commandType: CommandType.StoredProcedure);
 
             var totalCount = await multi.ReadSingleAsync<int>();
@@ -63,7 +75,15 @@ namespace Health.Infrastructure.Repositories.Dapper
 
             using var multi = await conn.QueryMultipleAsync(
                 "sp_GetConsultationsByPatient",
-                new { PatientId = patientId, Status = status, FromDate = fromDate, ToDate = toDate, Page = page, PageSize = pageSize },
+                new
+                {
+                    PatientId = patientId,
+                    Status = status,
+                    FromDate = fromDate,
+                    ToDate = toDate,
+                    Page = page,
+                    PageSize = pageSize
+                },
                 commandType: CommandType.StoredProcedure);
 
             var totalCount = await multi.ReadSingleAsync<int>();
@@ -93,7 +113,7 @@ namespace Health.Infrastructure.Repositories.Dapper
             if (details == null)
                 return null;
 
-            // Deserialize JSON manually
+            // Deserialize JSON for HealthValues
             if (!string.IsNullOrWhiteSpace(details.HealthValuesJson))
             {
                 try
@@ -108,7 +128,6 @@ namespace Health.Infrastructure.Repositories.Dapper
                     details.HealthValues = new Dictionary<string, decimal>();
                 }
             }
-
 
             // Prescription items
             details.PrescriptionItems = (await multi.ReadAsync<PrescriptionItemDto>()).ToList();

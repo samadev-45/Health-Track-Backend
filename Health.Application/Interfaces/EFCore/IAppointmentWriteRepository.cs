@@ -1,4 +1,7 @@
+
 ﻿using Health.Application.DTOs.Appointment;
+
+
 using Health.Domain.Entities;
 using System;
 using System.Threading;

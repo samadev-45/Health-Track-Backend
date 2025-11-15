@@ -85,44 +85,77 @@ namespace Health.WebAPI
 
             // Infrastructure Dependencies (Repositories, Email, OTP, etc.)
             builder.Services.AddInfrastructure(configuration);
+            builder.Services.AddScoped<IAuthService, AuthService>();
 
             // Application-level Services
-            builder.Services.AddScoped<IAuthService, AuthService>();
+
             builder.Services.AddScoped<JwtHelper>();
 
-            // JWT Authentication
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .SetIsOriginAllowed(_ => true);
+                });
+            });
+
             // JWT Authentication
             var jwtSection = configuration.GetSection("Jwt");
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = true;
-                    options.SaveToken = true;
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = jwtSection["Issuer"],
-                        ValidateAudience = true,
-                        ValidAudience = jwtSection["Audience"],
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(jwtSection["Key"]!)
-                        ),
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.FromSeconds(30),
+            .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false; // turn off for local testing
+            options.SaveToken = true;
 
-                        // 🔹 These two lines FIX user id & role claims mapping
-                        NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
-                        RoleClaimType = System.Security.Claims.ClaimTypes.Role
-                    };
-                });
+            options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSection["Audience"],
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSection["Key"]!)
+            ),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
+        };
+
+        //  Read JWT from cookies instead of header
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.ContainsKey("access_token"))
+                {
+                    context.Token = context.Request.Cookies["access_token"];
+                }
+                return Task.CompletedTask;
+            }
+                };
+            });
+
 
 
             builder.Services.AddAuthorization();
+            // Cookie Policy
+            builder.Services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+                options.Secure = CookieSecurePolicy.None;
+            });
+
 
             var app = builder.Build();
 
-            // 🔹 Apply migrations & seed admin
+            //  Apply migrations & seed admin
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -138,12 +171,18 @@ namespace Health.WebAPI
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
+
+            app.UseCors("AllowAll");
+
+            app.UseCookiePolicy(); 
+
             app.UseAuthentication();
             app.UseAuthorization();
-            app.MapControllers();
 
-            await app.RunAsync();
+            app.MapControllers();
+            app.Run();
+
         }
     }
 }

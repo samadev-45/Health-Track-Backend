@@ -1,10 +1,14 @@
-﻿using Health.Domain.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Health.Domain.Common;
 using Health.Domain.Entities;
 using Health.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Text.Json;
 
 namespace Health.Infrastructure.Data
 {
@@ -33,11 +37,11 @@ namespace Health.Infrastructure.Data
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<HealthMetric> HealthMetrics { get; set; } = null!;
         public DbSet<OtpVerification> OtpVerifications { get; set; } = null!;
-        public DbSet<BloodType> BloodTypes { get; set; }
+        public DbSet<BloodType> BloodTypes { get; set; } = null!;
         public DbSet<Consultation> Consultations { get; set; } = null!;
 
-        public DbSet<Prescription> Prescriptions { get; set; }
-        public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
+        public DbSet<Prescription> Prescriptions { get; set; } = null!;
+        public DbSet<PrescriptionItem> PrescriptionItems { get; set; } = null!;
 
         //  Automatically
         //  set CreatedBy, ModifiedBy, DeletedBy
@@ -91,9 +95,6 @@ namespace Health.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-
-         
 
             // User
             modelBuilder.Entity<User>(builder =>
@@ -175,7 +176,6 @@ namespace Health.Infrastructure.Data
             });
 
             // Appointment
-
             modelBuilder.Entity<Appointment>(b =>
             {
                 b.HasKey(x => x.AppointmentId);
@@ -197,12 +197,6 @@ namespace Health.Infrastructure.Data
                     .HasForeignKey(x => x.DoctorId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // ✅ Define one-to-one link with Consultation
-                //b.HasOne(x => x.Consultation)
-                //    .WithOne(c => c.Appointment)
-                //    .HasForeignKey<Consultation>(c => c.AppointmentId)
-                //    .OnDelete(DeleteBehavior.Cascade);
-
                 // Prevent duplicate bookings
                 b.HasIndex(x => new { x.DoctorId, x.AppointmentDate, x.AppointmentTime })
                  .IsUnique()
@@ -214,8 +208,6 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.Status);
                 b.HasIndex(x => x.IsDeleted);
             });
-
-
 
             // AppointmentHistory
             modelBuilder.Entity<AppointmentHistory>(b =>
@@ -252,13 +244,13 @@ namespace Health.Infrastructure.Data
                 b.Property(x => x.FileData).IsRequired();
                 b.Property(x => x.FileSize);
 
-                // ✅ Link to Consultation
+                // Link to Consultation
                 b.HasOne(x => x.Consultation)
-                 .WithMany(c => c.Files) // this allows Consultation.Files navigation
+                 .WithMany(c => c.Files)
                  .HasForeignKey(x => x.ConsultationId)
                  .OnDelete(DeleteBehavior.Cascade);
 
-                // ✅ Link to User (uploaded by)
+                // Link to User (uploaded by)
                 b.HasOne(x => x.UploadedByUser)
                  .WithMany(u => u.UploadedFiles)
                  .HasForeignKey(x => x.UploadedByUserId)
@@ -268,7 +260,6 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.UploadedByUserId);
                 b.HasIndex(x => x.IsDeleted);
             });
-
 
             // MedicalRecord
             modelBuilder.Entity<MedicalRecord>(b =>
@@ -300,12 +291,11 @@ namespace Health.Infrastructure.Data
                 b.Property(x => x.UnitName).HasMaxLength(20).IsRequired();
                 b.Property(x => x.Description).HasMaxLength(100);
 
-                
                 b.Property(x => x.CreatedOn)
-                 .HasDefaultValueSql("GETUTCDATE()"); 
+                 .HasDefaultValueSql("GETUTCDATE()");
 
                 b.Property(x => x.CreatedBy)
-                 .HasDefaultValue(1); 
+                 .HasDefaultValue(1);
 
                 b.HasIndex(x => x.UnitName).IsUnique();
 
@@ -351,7 +341,6 @@ namespace Health.Infrastructure.Data
             });
 
             // MedicationReminder
-            
             modelBuilder.Entity<MedicationReminder>(b =>
             {
                 b.HasKey(x => x.ReminderId);
@@ -362,11 +351,11 @@ namespace Health.Infrastructure.Data
                 b.HasOne(x => x.Medication)
                  .WithMany(m => m.Reminders)
                  .HasForeignKey(x => x.MedicationId)
-                 .OnDelete(DeleteBehavior.Cascade); // delete reminders with parent med [web:136]
+                 .OnDelete(DeleteBehavior.Cascade); // delete reminders with parent med
 
                 // Helpful indexes for scheduler queries
                 b.HasIndex(x => x.MedicationId);
-                b.HasIndex(x => x.RemindAt);  
+                b.HasIndex(x => x.RemindAt);
                 b.HasIndex(x => x.IsSent);
                 b.HasIndex(x => x.IsDeleted);
             });
@@ -376,20 +365,19 @@ namespace Health.Infrastructure.Data
                 b.HasKey(x => x.ShareableLinkId);
 
                 b.Property(x => x.Token).HasMaxLength(128).IsRequired();
-                b.HasIndex(x => x.Token).IsUnique();                 // enforce uniqueness [web:331][web:327]
+                b.HasIndex(x => x.Token).IsUnique();
 
-                
                 b.Property(x => x.ExpiresAt).IsRequired();
 
                 b.HasOne(x => x.User)
                  .WithMany(u => u.ShareableLinks)
                  .HasForeignKey(x => x.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);                  // cleanup with user [web:136]
+                 .OnDelete(DeleteBehavior.Cascade);
 
                 // Helpful indexes
                 b.HasIndex(x => x.UserId);
                 b.HasIndex(x => x.IsActive);
-                b.HasIndex(x => x.ExpiresAt);                        // TTL queries
+                b.HasIndex(x => x.ExpiresAt);
                 b.HasIndex(x => x.IsDeleted);
             });
 
@@ -405,7 +393,7 @@ namespace Health.Infrastructure.Data
                 b.HasOne(x => x.User)
                  .WithMany(u => u.Notifications)
                  .HasForeignKey(x => x.UserId)
-                 .OnDelete(DeleteBehavior.Cascade); // remove notifications if user deleted [web:136]
+                 .OnDelete(DeleteBehavior.Cascade); // remove notifications if user deleted
 
                 // Useful indexes for inbox queries
                 b.HasIndex(x => x.UserId);
@@ -434,6 +422,7 @@ namespace Health.Infrastructure.Data
                 b.HasIndex(x => x.MeasuredAt);
                 b.HasIndex(x => x.IsDeleted);
             });
+
             modelBuilder.Entity<OtpVerification>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -463,11 +452,10 @@ namespace Health.Infrastructure.Data
                 entity.HasIndex(e => new { e.UserId, e.Purpose, e.Expiry, e.Used });
             });
 
-
-
+            // BloodType
             modelBuilder.Entity<BloodType>(b =>
             {
-                b.ToTable("BloodType", schema: "master"); 
+                b.ToTable("BloodType", schema: "master");
                 b.HasKey(x => x.BloodTypeId);
                 b.Property(x => x.Name).HasMaxLength(5).IsRequired();
                 b.HasIndex(x => x.Name).IsUnique();
@@ -477,6 +465,8 @@ namespace Health.Infrastructure.Data
 
                 b.HasData(BloodTypeData.GetSeed());
             });
+
+            // Consultation
             modelBuilder.Entity<Consultation>(b =>
             {
                 b.ToTable("Consultation");
@@ -509,9 +499,7 @@ namespace Health.Infrastructure.Data
                     .HasForeignKey(p => p.ConsultationId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // -----------------------------------------
-                //  JSON CONVERSION FOR Dictionary<string, decimal>
-                // -----------------------------------------
+                // JSON conversion for Dictionary<string, decimal>
                 b.Property(x => x.HealthValues)
                     .HasColumnType("nvarchar(max)")
                     .HasConversion(
@@ -526,11 +514,9 @@ namespace Health.Infrastructure.Data
                         })!
                     );
 
-                
                 b.Property(x => x.TrendSummary)
-                    .HasMaxLength(500); // or nvarchar(max) if long text
+                    .HasMaxLength(500);
             });
-
 
             modelBuilder.Entity<Prescription>(b =>
             {
@@ -563,13 +549,6 @@ namespace Health.Infrastructure.Data
                  .HasForeignKey(x => x.PrescriptionId)
                  .OnDelete(DeleteBehavior.Cascade);
             });
-
-            
-
-
-
-
-
         }
     }
 }

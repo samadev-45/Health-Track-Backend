@@ -5,6 +5,7 @@ using Health.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Health.WebAPI.Controllers
 {
@@ -31,9 +32,9 @@ namespace Health.WebAPI.Controllers
         [HttpPost("{appointmentId}")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> CreateConsultation(
-            int appointmentId,
-            [FromBody] ConsultationCreateDto dto,
-            CancellationToken ct)
+    int appointmentId,
+    [FromBody] ConsultationCreateDto dto,
+    CancellationToken ct)
         {
             dto.AppointmentId = appointmentId;
 
@@ -173,5 +174,6 @@ namespace Health.WebAPI.Controllers
 
             return File(file.FileBytes, file.ContentType, file.FileName);
         }
+
     }
 }

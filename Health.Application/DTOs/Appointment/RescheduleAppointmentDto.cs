@@ -1,5 +1,4 @@
-﻿// Health.Application.DTOs.Appointments/RescheduleAppointmentDto.cs
-using System;
+﻿using System;
 
 namespace Health.Application.DTOs.Appointment
 {

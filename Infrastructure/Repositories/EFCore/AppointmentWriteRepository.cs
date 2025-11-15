@@ -1,4 +1,6 @@
+
 ﻿using Health.Application.DTOs.Appointment;
+
 using Health.Application.Interfaces;
 using Health.Application.Interfaces.EFCore;
 using Health.Domain.Entities;

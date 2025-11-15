@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using Health.Application.Common;
 using Health.Application.Configuration;
+
 using Health.Application.DTOs.Appointment;
+
 using Health.Application.Helpers;
 using Health.Application.Interfaces;
 using Health.Application.Interfaces.Dapper;
