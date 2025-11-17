@@ -63,12 +63,26 @@ namespace Health.WebAPI.Controllers
                 return BadRequest(ModelState);
 
             var response = await _authService.LoginAsync(loginDto);
-            if (!response.Success)
-                return Unauthorized(response);
 
-            if (response.Success && response.Data is LoginResponseDto loginData)
+
+            var message = response.Message.ToLower();
+
+
+
+            if (!response.Success)
             {
-                // Set HttpOnly access token cookie
+                if (message.Contains("pending", StringComparison.OrdinalIgnoreCase) ||
+                    message.Contains("rejected", StringComparison.OrdinalIgnoreCase))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, response);
+                }
+
+                return Unauthorized(response);
+            }
+
+
+            if (response.Data is LoginResponseDto loginData)
+            {
                 Response.Cookies.Append("access_token", loginData.Token, new CookieOptions
                 {
                     HttpOnly = true,
@@ -77,13 +91,12 @@ namespace Health.WebAPI.Controllers
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
 
-                // Remove token from response body to avoid exposing it
                 loginData.Token = null!;
             }
 
             return Ok(response);
-
         }
+
 
         [HttpPost("request-email-Otp")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
@@ -276,6 +289,20 @@ namespace Health.WebAPI.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("access_token", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+
 
 
 

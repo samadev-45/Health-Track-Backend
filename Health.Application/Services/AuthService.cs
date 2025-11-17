@@ -47,18 +47,18 @@ namespace Health.Application.Services
         // Register User
         public async Task<ApiResponse<RegisterResponseDto>> RegisterAsync(RegisterDto registerDto)
         {
-            //  Clean up invalid doctor fields
+            
             if (registerDto.Role != RoleType.Doctor)
             {
-                // If the user is NOT a doctor, clear these fields
+               
                 registerDto.SpecialtyId = 0;
                 registerDto.LicenseNumber = null;
             }
-            // Validate Email
+          
             if (!IsValidEmail(registerDto.Email))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid email format.");
 
-            //   Validate Phone Numbers
+          
             if (!IsValidPhoneNumber(registerDto.PhoneNumber))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Phone number must contain exactly 10 digits.");
 
@@ -69,12 +69,12 @@ namespace Health.Application.Services
             if (!IsValidEmail(registerDto.Email))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid email format.");
 
-            // Check if email already exists
+            
             var existingUser = await _userRepository.FindAsync(u => u.Email == registerDto.Email);
             if (existingUser.Any())
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Email already registered.");
 
-            //  Role-based validation
+         
              
             switch (registerDto.Role)
             {
@@ -97,7 +97,7 @@ namespace Health.Application.Services
             }
 
 
-            // Map DTO → Entity
+           
             var user = _mapper.Map<User>(registerDto);
             user.CreatedOn = DateTime.UtcNow;
             user.Role = registerDto.Role;
@@ -132,7 +132,7 @@ namespace Health.Application.Services
                 return ApiResponse<LoginResponseDto>.ErrorResponse("User not found.");
 
             if (user.Status == AccountStatus.Pending)
-                return ApiResponse<LoginResponseDto>.ErrorResponse("Your account is pending approval by admin.");
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Your account is pending approval by admin.",403);
 
             if (user.Status == AccountStatus.Rejected)
                 return ApiResponse<LoginResponseDto>.ErrorResponse("Your registration was rejected. Please contact admin.");

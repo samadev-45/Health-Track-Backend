@@ -10,5 +10,6 @@ namespace Health.Application.DTOs.Auth
     {
         public string Email { get; set; } = null!;
         public string Otp { get; set; } = null!;
+        public string Status { get; set; } = null!;
     }
 }

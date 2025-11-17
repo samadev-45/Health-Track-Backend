@@ -18,12 +18,14 @@
             };
 
         public static ApiResponse<T> ErrorResponse(string error, int statusCode = 400)
-            => new()
-            {
-                Success = false,
-                Errors = new List<string> { error },
-                StatusCode = statusCode
-            };
+    => new()
+    {
+        Success = false,
+        Message = error,
+        Errors = new List<string> { error },
+        StatusCode = statusCode
+    };
+
 
         public static ApiResponse<T> ErrorResponse(string message, object errors, int statusCode = 400)
             => new()
