@@ -21,5 +21,6 @@ namespace Health.Domain.Entities
         public FileStorage? File { get; set; }
 
         public User User { get; set; } = null!;
+        public RecordType? RecordType { get; set; }
     }
 }

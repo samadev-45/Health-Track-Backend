@@ -42,6 +42,8 @@ namespace Health.Infrastructure.Data
 
         public DbSet<Prescription> Prescriptions { get; set; } = null!;
         public DbSet<PrescriptionItem> PrescriptionItems { get; set; } = null!;
+        public DbSet<MedicalRecord> MedicalRecords { get; set; } = null!;
+        public DbSet<RecordType> RecordTypes { get; set; } = null!;
 
         //  Automatically
         //  set CreatedBy, ModifiedBy, DeletedBy
@@ -549,6 +551,49 @@ namespace Health.Infrastructure.Data
                  .HasForeignKey(x => x.PrescriptionId)
                  .OnDelete(DeleteBehavior.Cascade);
             });
+
+            // MedicalRecord
+            modelBuilder.Entity<MedicalRecord>(b =>
+            {
+                b.ToTable("MedicalRecords");
+                b.HasKey(x => x.RecordId);
+
+                b.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                b.Property(x => x.Hospital).HasMaxLength(200);
+
+                b.HasOne(x => x.User)
+                 .WithMany(u => u.MedicalRecords)
+                 .HasForeignKey(x => x.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.File)
+                 .WithMany()
+                 .HasForeignKey(x => x.FileStorageId)
+                 .OnDelete(DeleteBehavior.SetNull);
+                b.HasOne<RecordType>()
+        .WithMany(rt => rt.MedicalRecords)
+        .HasForeignKey(x => x.RecordTypeId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasIndex(x => x.UserId);
+                b.HasIndex(x => x.RecordDate);
+                b.HasIndex(x => x.IsDeleted);
+            });
+
+            modelBuilder.Entity<RecordType>(b =>
+            {
+                b.ToTable("RecordType", schema: "master");
+                b.HasKey(x => x.RecordTypeId);
+
+                b.Property(x => x.Name)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+               
+                b.HasData(RecordTypeData.GetSeed());
+            });
+
+
         }
     }
 }

@@ -4,6 +4,7 @@ using Health.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Health.Infrastructure.Migrations
 {
     [DbContext(typeof(HealthDbContext))]
-    partial class HealthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251118105841_MedicalRecordadded")]
+    partial class MedicalRecordadded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -634,9 +637,6 @@ namespace Health.Infrastructure.Migrations
                     b.Property<int>("RecordTypeId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("RecordTypeId1")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -653,13 +653,9 @@ namespace Health.Infrastructure.Migrations
 
                     b.HasIndex("RecordDate");
 
-                    b.HasIndex("RecordTypeId");
-
-                    b.HasIndex("RecordTypeId1");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("MedicalRecords", (string)null);
+                    b.ToTable("MedicalRecords");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.Medication", b =>
@@ -1041,95 +1037,6 @@ namespace Health.Infrastructure.Migrations
                     b.HasIndex("PrescriptionId");
 
                     b.ToTable("PrescriptionItems", (string)null);
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.RecordType", b =>
-                {
-                    b.Property<int>("RecordTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RecordTypeId"));
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DeletedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("RecordTypeId");
-
-                    b.ToTable("RecordType", "master");
-
-                    b.HasData(
-                        new
-                        {
-                            RecordTypeId = 1,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "Prescription"
-                        },
-                        new
-                        {
-                            RecordTypeId = 2,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "Lab Report"
-                        },
-                        new
-                        {
-                            RecordTypeId = 3,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "X-Ray"
-                        },
-                        new
-                        {
-                            RecordTypeId = 4,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "MRI"
-                        },
-                        new
-                        {
-                            RecordTypeId = 5,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "Scan"
-                        },
-                        new
-                        {
-                            RecordTypeId = 6,
-                            CreatedBy = 1,
-                            CreatedOn = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "Other"
-                        });
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.RefreshToken", b =>
@@ -1613,16 +1520,6 @@ namespace Health.Infrastructure.Migrations
                         .HasForeignKey("FileStorageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Health.Domain.Entities.RecordType", null)
-                        .WithMany("MedicalRecords")
-                        .HasForeignKey("RecordTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Health.Domain.Entities.RecordType", "RecordType")
-                        .WithMany()
-                        .HasForeignKey("RecordTypeId1");
-
                     b.HasOne("Health.Domain.Entities.User", "User")
                         .WithMany("MedicalRecords")
                         .HasForeignKey("UserId")
@@ -1630,8 +1527,6 @@ namespace Health.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("File");
-
-                    b.Navigation("RecordType");
 
                     b.Navigation("User");
                 });
@@ -1780,11 +1675,6 @@ namespace Health.Infrastructure.Migrations
             modelBuilder.Entity("Health.Domain.Entities.Prescription", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("Health.Domain.Entities.RecordType", b =>
-                {
-                    b.Navigation("MedicalRecords");
                 });
 
             modelBuilder.Entity("Health.Domain.Entities.Unit", b =>

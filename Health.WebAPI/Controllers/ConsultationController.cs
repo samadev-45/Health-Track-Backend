@@ -20,15 +20,15 @@ namespace Health.WebAPI.Controllers
             _consultationService = consultationService;
         }
 
-        // ---------------------------------------------------------
+        
         // Helper: Extract user id & role from JWT
-        // ---------------------------------------------------------
+        
         private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         private string CurrentRole => User.FindFirstValue(ClaimTypes.Role) ?? "";
 
-        // ---------------------------------------------------------
-        // 1. CREATE CONSULTATION (Doctor only)
-        // ---------------------------------------------------------
+        
+        
+        
         [HttpPost("{appointmentId}")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> CreateConsultation(
@@ -44,9 +44,7 @@ namespace Health.WebAPI.Controllers
             return Ok(result);
         }
 
-        // ---------------------------------------------------------
-        // 2. UPDATE CONSULTATION (Doctor only)
-        // ---------------------------------------------------------
+        
         [HttpPut("{consultationId}")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> UpdateConsultation(

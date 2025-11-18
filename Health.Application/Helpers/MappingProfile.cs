@@ -2,6 +2,9 @@
 using Health.Application.DTOs;
 using Health.Application.DTOs.Appointment;
 using Health.Application.DTOs.Consultation;
+using Health.Application.DTOs.File;
+using Health.Application.DTOs.MedicalRecord;
+using Health.Application.DTOs.Medication;
 using Health.Application.DTOs.Prescription;
 using Health.Domain.Entities;
 
@@ -84,6 +87,35 @@ namespace Health.Application.Helpers
             CreateMap<PrescriptionItemCreateDto, PrescriptionItem>();
             CreateMap<PrescriptionItemUpdateDto, PrescriptionItem>();
             CreateMap<PrescriptionItem, PrescriptionItemDto>();
+
+            CreateMap<FileStorage, FileDownloadDto>()
+           .ForMember(d => d.FileBytes, o => o.MapFrom(f => f.FileData));
+
+            CreateMap<FileStorage, FileDto>();
+
+            CreateMap<MedicalRecord, MedicalRecordListDto>();
+            CreateMap<MedicalRecord, MedicalRecordDto>()
+    .ForMember(d => d.FileName,
+        opt => opt.MapFrom(src => src.File != null ? src.File.FileName : null))
+    .ForMember(d => d.ContentType,
+        opt => opt.MapFrom(src => src.File != null ? src.File.ContentType : null))
+    .ForMember(d => d.FileSize,
+    opt => opt.MapFrom(src => src.File != null ? (long?)src.File.FileSize : null));
+
+            CreateMap<Medication, MedicationDto>()
+        .ForMember(d => d.UnitName, opt => opt.MapFrom(src => src.Unit != null ? src.Unit.UnitName : null));
+
+            CreateMap<Medication, MedicationListDto>();
+            CreateMap<MedicationCreateDto, Medication>();
+            CreateMap<Medication, MedicationScheduleItemDto>()
+                .ForMember(d => d.MedicationName, opt => opt.MapFrom(s => s.Name));
+
+            CreateMap<MedicalRecord, MedicalRecordDto>()
+    .ForMember(d => d.FileName, opt => opt.MapFrom(src => src.File.FileName))
+    .ForMember(d => d.ContentType, opt => opt.MapFrom(src => src.File.ContentType))
+    .ForMember(d => d.FileSize, opt => opt.MapFrom(src => src.File.FileSize));
+
+
 
         }
     }

@@ -30,6 +30,7 @@ namespace Health.Domain.Entities
         public User User { get; set; } = null!;
         public Unit Unit { get; set; } = null!;
         public Unit? DoseRangeUnit { get; set; }
+
         public ICollection<MedicationReminder> Reminders { get; set; } = new List<MedicationReminder>();
     }
 }

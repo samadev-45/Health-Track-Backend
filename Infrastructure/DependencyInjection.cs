@@ -1,7 +1,9 @@
-﻿using Health.Application.Interfaces;
+﻿using Health.Application.Common;
+using Health.Application.Interfaces;
 using Health.Application.Interfaces.Dapper;
 using Health.Application.Interfaces.EFCore;
 using Health.Application.Services;
+using Health.Domain.Entities;
 using Health.Infrastructure.Data;
 using Health.Infrastructure.Repositories;
 using Health.Infrastructure.Repositories.Dapper;
@@ -11,7 +13,6 @@ using Health.Infrastructure.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Health.Application.Common;
 
 namespace Health.Infrastructure
 {
@@ -41,8 +42,20 @@ namespace Health.Infrastructure
             services.AddScoped<IConsultationWriteRepository, ConsultationRepository>();
             services.AddScoped<IConsultationReadRepository, ConsultationReadRepository>();
             services.AddScoped<IPdfGenerator, QuestPdfGenerator>();
+            services.AddScoped<IMedicalRecordReadRepository, MedicalRecordReadRepository>();
+            
+            services.AddScoped<IFileStorageService, FileStorageService>();
+            services.AddScoped<IMedicalRecordService, MedicalRecordService>();
+
+            // EF write repos
+            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             services.AddSingleton<Application.Common.HealthMetricEngine>();
+            services.AddScoped<IGenericRepository<Medication>, GenericRepository<Medication>>();
+            services.AddScoped<IGenericRepository<MedicationReminder>, GenericRepository<MedicationReminder>>();
+
+            services.AddScoped<IMedicationReadRepository, MedicationReadRepository>();
+            services.AddScoped<IMedicationService, MedicationService>();
 
 
             return services;
