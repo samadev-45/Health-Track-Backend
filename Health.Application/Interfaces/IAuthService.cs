@@ -7,9 +7,16 @@ namespace Health.Application.Interfaces
     public interface IAuthService
     {
         Task<ApiResponse<RegisterResponseDto>> RegisterAsync(RegisterDto registerDto);
+
         Task<ApiResponse<LoginResponseDto>> LoginAsync(LoginDto loginDto);
+
+        
         (string Token, string RefreshToken) GenerateTokensForUser(User user);
-        ApiResponse<LoginResponseDto> RefreshToken(RefreshRequestDto dto);
-        ApiResponse<string> Logout(int userId);
+
+        
+        ApiResponse<LoginResponseDto> RefreshTokenByValue(string refreshToken);
+
+        
+        ApiResponse<string> RevokeRefreshTokenByValue(string refreshToken);
     }
 }

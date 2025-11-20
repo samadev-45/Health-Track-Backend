@@ -8,9 +8,11 @@ namespace Health.Domain.Entities
         public int HealthMetricId { get; set; }
 
         public int UserId { get; set; }                 // patient
-        public string MetricCode { get; set; } = null!; // e.g., "glucose", "sodium", "potassium", "temperature"
+        public int MetricTypeId { get; set; }
+        public MetricType MetricType { get; set; } = null!;
+        // e.g., "glucose", "sodium", "potassium", "temperature"
         public decimal Value { get; set; }              // numeric value
-        public string Unit { get; set; } = null!;       // e.g., "mg/dL", "mmol/L", "°C"
+        
         public DateTime MeasuredAt { get; set; }
 
         public bool IsAbnormal { get; set; } = false;   // computed at insert/update

@@ -39,7 +39,7 @@ namespace Health.Infrastructure.Services
                 }
             }
 
-            // No match found, assume not abnormal
+            
             return false;
         }
 

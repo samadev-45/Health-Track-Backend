@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using AutoMapper;
 using Health.Application.Common;
-
 using Health.Application.Helpers;
 using Health.Application.Interfaces;
 using Health.Domain.Entities;
@@ -14,9 +13,7 @@ using Health.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Health.Application.Interfaces.EFCore;
-
 using Health.Application.DTOs.Auth;
-
 
 namespace Health.Application.Services
 {
@@ -28,7 +25,7 @@ namespace Health.Application.Services
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IMapper _mapper;
 
-       
+        // Stores: userId => refreshToken
         private static readonly Dictionary<int, string> _activeRefreshTokens = new();
 
         public AuthService(
@@ -44,38 +41,28 @@ namespace Health.Application.Services
             _passwordHasher = new PasswordHasher<User>();
         }
 
-        // Register User
+        // ------------------------ REGISTER ------------------------
         public async Task<ApiResponse<RegisterResponseDto>> RegisterAsync(RegisterDto registerDto)
         {
-            
             if (registerDto.Role != RoleType.Doctor)
             {
-               
                 registerDto.SpecialtyId = 0;
                 registerDto.LicenseNumber = null;
             }
-          
+
             if (!IsValidEmail(registerDto.Email))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid email format.");
 
-          
             if (!IsValidPhoneNumber(registerDto.PhoneNumber))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Phone number must contain exactly 10 digits.");
 
             if (!IsValidPhoneNumber(registerDto.EmergencyContactPhone))
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Emergency contact number must contain exactly 10 digits.");
 
-
-            if (!IsValidEmail(registerDto.Email))
-                return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid email format.");
-
-            
             var existingUser = await _userRepository.FindAsync(u => u.Email == registerDto.Email);
             if (existingUser.Any())
                 return ApiResponse<RegisterResponseDto>.ErrorResponse("Email already registered.");
 
-         
-             
             switch (registerDto.Role)
             {
                 case RoleType.Doctor:
@@ -91,13 +78,8 @@ namespace Health.Application.Services
 
                 case RoleType.Admin:
                     return ApiResponse<RegisterResponseDto>.ErrorResponse("You are not allowed to register as an Admin.");
-
-                default:
-                    return ApiResponse<RegisterResponseDto>.ErrorResponse("Invalid role type.");
             }
 
-
-           
             var user = _mapper.Map<User>(registerDto);
             user.CreatedOn = DateTime.UtcNow;
             user.Role = registerDto.Role;
@@ -113,13 +95,13 @@ namespace Health.Application.Services
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 IsEmailVerified = false,
-                Message = "Registration successful.Awaiting admin approval"
+                Message = "Registration successful. Awaiting admin approval"
             };
 
             return ApiResponse<RegisterResponseDto>.SuccessResponse(response, "Registration completed successfully");
         }
 
-        //  Login User
+        // ------------------------ LOGIN ------------------------
         public async Task<ApiResponse<LoginResponseDto>> LoginAsync(LoginDto loginDto)
         {
             if (!IsValidEmail(loginDto.Email))
@@ -132,117 +114,50 @@ namespace Health.Application.Services
                 return ApiResponse<LoginResponseDto>.ErrorResponse("User not found.");
 
             if (user.Status == AccountStatus.Pending)
-                return ApiResponse<LoginResponseDto>.ErrorResponse("Your account is pending approval by admin.",403);
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Your account is pending approval by admin.", 403);
 
             if (user.Status == AccountStatus.Rejected)
                 return ApiResponse<LoginResponseDto>.ErrorResponse("Your registration was rejected. Please contact admin.");
-
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
             if (result == PasswordVerificationResult.Failed)
                 return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid password.");
 
-            // Generate JWT and Refresh Token
-           
             var (accessToken, refreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
 
-            
             _activeRefreshTokens[user.UserId] = refreshToken;
-            
 
             var response = new LoginResponseDto
             {
                 FullName = user.FullName,
                 Email = user.Email,
                 Role = user.Role.ToString(),
-                Token = accessToken,
+                Token = accessToken,       // controller will move these to cookies
                 RefreshToken = refreshToken
             };
-
 
             return ApiResponse<LoginResponseDto>.SuccessResponse(response, "Login successful");
         }
 
-        //  Logout (Revoke Refresh Token)
-        public ApiResponse<string> Logout(int userId)
+        // ------------------------ REFRESH (Cookie Only) ------------------------
+        public ApiResponse<LoginResponseDto> RefreshTokenByValue(string refreshToken)
         {
-            if (_activeRefreshTokens.ContainsKey(userId))
-            {
-                _activeRefreshTokens.Remove(userId);
-                return ApiResponse<string>.SuccessResponse("Logout successful", "Refresh token revoked");
-            }
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return ApiResponse<LoginResponseDto>.ErrorResponse("Refresh token missing.");
 
-            return ApiResponse<string>.ErrorResponse("No active session found for this user.");
-        }
+            var pair = _activeRefreshTokens.FirstOrDefault(kv => kv.Value == refreshToken);
 
-        //  Generate Secure Refresh Token
-        private string GenerateRefreshToken()
-        {
-            var randomBytes = RandomNumberGenerator.GetBytes(64);
-            return Convert.ToBase64String(randomBytes);
-        }
-
-        //  Email Validation
-        private bool IsValidEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-                return false;
-
-            //  Disallow leading/trailing special chars like "-", ".", "_"
-            if (email.StartsWith("-") || email.StartsWith(".") || email.StartsWith("_") ||
-                email.EndsWith("-") || email.EndsWith(".") || email.EndsWith("_"))
-                return false;
-
-            // compliant email pattern with stronger local-part validation
-            var pattern = @"^(?!.*[-_.]{2})[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-
-            if (!Regex.IsMatch(email, pattern))
-                return false;
-
-            //  Domain checks (avoid things like "@.com" or "gmail..com")
-            var domain = email.Split('@').LastOrDefault();
-            if (string.IsNullOrWhiteSpace(domain) || !domain.Contains('.') || domain.Contains(".."))
-                return false;
-
-            //  Prevent invalid symbols like "/", "\", ",", " "
-            if (Regex.IsMatch(email, @"[\/\\,\s]"))
-                return false;
-
-            return true;
-        }
-        private bool IsValidPhoneNumber(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-                return false;
-
-            // Allow only 10 digits (no spaces, +, -, etc.)
-            var pattern = @"^\d{10}$";
-            return Regex.IsMatch(phone, pattern);
-        }
-
-        public (string Token, string RefreshToken) GenerateTokensForUser(User user)
-        {
-            var (accessToken, refreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
-            return (accessToken, refreshToken);
-        }
-        public ApiResponse<LoginResponseDto> RefreshToken(RefreshRequestDto dto)
-        {
-            // Check if refresh token exists and matches
-            if (!_activeRefreshTokens.TryGetValue(dto.UserId, out var storedToken))
-                return ApiResponse<LoginResponseDto>.ErrorResponse("No active refresh token found.");
-
-            if (storedToken != dto.RefreshToken)
+            if (pair.Equals(default(KeyValuePair<int, string>)))
                 return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid refresh token.");
 
-            // Fetch user
-            var user = _userRepository.Query().FirstOrDefault(u => u.UserId == dto.UserId);
+            var userId = pair.Key;
+
+            var user = _userRepository.Query().FirstOrDefault(u => u.UserId == userId && !u.IsDeleted);
             if (user == null)
                 return ApiResponse<LoginResponseDto>.ErrorResponse("User not found.");
 
-            // Generate new tokens
             var (newAccessToken, newRefreshToken) = _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
 
-            // Replace old refresh token
             _activeRefreshTokens[user.UserId] = newRefreshToken;
 
             var response = new LoginResponseDto
@@ -255,8 +170,40 @@ namespace Health.Application.Services
             };
 
             return ApiResponse<LoginResponseDto>.SuccessResponse(response, "Token refreshed successfully");
-        }   
+        }
 
+        // ------------------------ LOGOUT ------------------------
+        public ApiResponse<string> RevokeRefreshTokenByValue(string refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return ApiResponse<string>.ErrorResponse("Invalid refresh token.");
 
+            var pair = _activeRefreshTokens.FirstOrDefault(kv => kv.Value == refreshToken);
+
+            if (pair.Equals(default(KeyValuePair<int, string>)))
+                return ApiResponse<string>.ErrorResponse("Refresh token not found.");
+
+            _activeRefreshTokens.Remove(pair.Key);
+
+            return ApiResponse<string>.SuccessResponse("Refresh token revoked", "Revoked");
+        }
+
+        // ------------------------ HELPERS ------------------------
+        private bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            var pattern = @"^(?!.*[-_.]{2})[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            return Regex.IsMatch(email, pattern);
+        }
+
+        private bool IsValidPhoneNumber(string phone)
+        {
+            return Regex.IsMatch(phone ?? "", @"^\d{10}$");
+        }
+
+        public (string Token, string RefreshToken) GenerateTokensForUser(User user)
+        {
+            return _jwtHelper.GenerateTokens(user.UserId, user.Email, user.Role);
+        }
     }
 }

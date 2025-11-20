@@ -44,7 +44,7 @@ namespace Health.Infrastructure.Data
         public DbSet<PrescriptionItem> PrescriptionItems { get; set; } = null!;
         public DbSet<MedicalRecord> MedicalRecords { get; set; } = null!;
         public DbSet<RecordType> RecordTypes { get; set; } = null!;
-
+        public DbSet<MetricType> MetricTypes { get; set; } = null!; 
         //  Automatically
         //  set CreatedBy, ModifiedBy, DeletedBy
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -408,22 +408,29 @@ namespace Health.Infrastructure.Data
             {
                 b.HasKey(x => x.HealthMetricId);
 
-                b.Property(x => x.MetricCode).HasMaxLength(50).IsRequired();
-                b.Property(x => x.Unit).HasMaxLength(20).IsRequired();
-                b.Property(x => x.Value).HasPrecision(10, 2);     // decimal(10,2)
+                b.Property(x => x.Value).HasPrecision(10, 2);
                 b.Property(x => x.Notes).HasMaxLength(300);
+                b.Property(x => x.MeasuredAt).IsRequired();
 
+                // Relation: HealthMetric → MetricType
+                b.HasOne(x => x.MetricType)
+                 .WithMany(mt => mt.HealthMetrics)
+                 .HasForeignKey(x => x.MetricTypeId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                // Relation: Patient → HealthMetric
                 b.HasOne(x => x.User)
                  .WithMany(u => u.HealthMetrics)
                  .HasForeignKey(x => x.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);               // tie to patient 
+                 .OnDelete(DeleteBehavior.Cascade);
 
-                // Helpful indexes
+                // Indexes
                 b.HasIndex(x => x.UserId);
-                b.HasIndex(x => x.MetricCode);
+                b.HasIndex(x => x.MetricTypeId);
                 b.HasIndex(x => x.MeasuredAt);
                 b.HasIndex(x => x.IsDeleted);
             });
+
 
             modelBuilder.Entity<OtpVerification>(entity =>
             {
@@ -592,6 +599,27 @@ namespace Health.Infrastructure.Data
                
                 b.HasData(RecordTypeData.GetSeed());
             });
+
+            modelBuilder.Entity<MetricType>(b =>
+            {
+                b.ToTable("MetricType", schema: "master");
+
+                b.HasKey(x => x.MetricTypeId);
+
+                b.Property(x => x.MetricCode).HasMaxLength(50).IsRequired();
+                b.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
+                b.Property(x => x.Unit).HasMaxLength(20).IsRequired();
+
+                b.Property(x => x.MinValue).HasPrecision(10, 2);
+                b.Property(x => x.MaxValue).HasPrecision(10, 2);
+
+                b.Property(x => x.IsActive).HasDefaultValue(true);
+
+                b.HasIndex(x => x.MetricCode).IsUnique();
+            });
+            modelBuilder.Entity<MetricType>()
+    .HasData(MetricTypeData.GetSeed());
+
 
 
         }

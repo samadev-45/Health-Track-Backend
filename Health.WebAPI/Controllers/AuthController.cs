@@ -6,9 +6,6 @@ using Health.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
 
 namespace Health.WebAPI.Controllers
 {
@@ -30,6 +27,7 @@ namespace Health.WebAPI.Controllers
             _context = context;
         }
 
+        // ------------------------- REGISTER -------------------------
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
@@ -38,24 +36,13 @@ namespace Health.WebAPI.Controllers
 
             var response = await _authService.RegisterAsync(registerDto);
 
-            
-            if (response.Success && response.Data is not null)
-            {
-                
-                if (string.IsNullOrWhiteSpace((response.Data as RegisterResponseDto)!.Status))
-                {
-                    var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == registerDto.Email);
-                    if (user is not null)
-                        (response.Data as RegisterResponseDto)!.Status = user.Status.ToString();
-                }
-            }
-
             if (!response.Success)
                 return BadRequest(response);
 
             return Ok(response);
         }
 
+        // ------------------------- LOGIN -------------------------
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
@@ -64,55 +51,55 @@ namespace Health.WebAPI.Controllers
 
             var response = await _authService.LoginAsync(loginDto);
 
-
-            var message = response.Message.ToLower();
-
-
+            var msg = (response.Message ?? "").ToLowerInvariant();
 
             if (!response.Success)
             {
-                if (message.Contains("pending", StringComparison.OrdinalIgnoreCase) ||
-                    message.Contains("rejected", StringComparison.OrdinalIgnoreCase))
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden, response);
-                }
+                if (msg.Contains("pending") || msg.Contains("rejected"))
+                    return StatusCode(403, response);
 
                 return Unauthorized(response);
             }
 
-
             if (response.Data is LoginResponseDto loginData)
             {
+                // Set access token cookie
                 Response.Cookies.Append("access_token", loginData.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
+                    Path = "/",
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
 
+                // Set refresh token cookie
+                Response.Cookies.Append("refresh_token", loginData.RefreshToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Path = "/",
+                    Expires = DateTime.UtcNow.AddDays(7)
+                });
+
+                // Remove tokens from response body
                 loginData.Token = null!;
+                loginData.RefreshToken = null!;
             }
 
             return Ok(response);
         }
 
-
+        // ------------------------- FORGOT PASSWORD -------------------------
         [HttpPost("request-email-Otp")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email))
-                return BadRequest("Email is required.");
+                return BadRequest(new { message = "Email is required." });
 
-            try
-            {
-                await _otpService.GenerateAndSendOtpAsync(dto.Email, "ResetPassword");
-                return Ok(new { message = "OTP sent successfully." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Failed to send OTP: {ex.Message}" });
-            }
+            await _otpService.GenerateAndSendOtpAsync(dto.Email, "ResetPassword");
+            return Ok(new { message = "OTP sent successfully." });
         }
 
         [HttpPost("Verify-email-Otp")]
@@ -127,7 +114,6 @@ namespace Health.WebAPI.Controllers
 
             try
             {
-                // dto.Otp is string; service will parse it to int internally
                 await _otpService.ResetPasswordAsync(user.UserId, dto.Otp, dto.NewPassword, dto.ConfirmPassword);
                 return Ok(new { message = "Password reset successfully." });
             }
@@ -137,8 +123,7 @@ namespace Health.WebAPI.Controllers
             }
         }
 
-        // Admin endpoints
-
+        // ------------------------- ADMIN -------------------------
         [Authorize(Roles = "Admin")]
         [HttpGet("admin/users/pending")]
         public async Task<IActionResult> GetPendingUsers()
@@ -163,7 +148,7 @@ namespace Health.WebAPI.Controllers
         public async Task<IActionResult> ToggleUserStatus(int id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && !u.IsDeleted);
-            if (user is null)
+            if (user == null)
                 return NotFound(new { message = "User not found." });
 
             var previous = user.Status;
@@ -171,16 +156,11 @@ namespace Health.WebAPI.Controllers
             switch (user.Status)
             {
                 case AccountStatus.Pending:
-                    user.Status = AccountStatus.Approved;
-                    break;
+                    user.Status = AccountStatus.Approved; break;
                 case AccountStatus.Approved:
-                    user.Status = AccountStatus.Rejected;
-                    break;
+                    user.Status = AccountStatus.Rejected; break;
                 case AccountStatus.Rejected:
-                    user.Status = AccountStatus.Approved;
-                    break;
-                default:
-                    return BadRequest(new { message = $"Unsupported status: {user.Status}" });
+                    user.Status = AccountStatus.Approved; break;
             }
 
             await _context.SaveChangesAsync();
@@ -195,7 +175,7 @@ namespace Health.WebAPI.Controllers
             });
         }
 
-
+        // --------------------- CARETAKER EMAIL LOGIN ---------------------
         [HttpPost("caretaker/request-email-otp")]
         public async Task<IActionResult> RequestCaretakerEmailOtp([FromBody] CaretakerEmailOtpRequestDto dto)
         {
@@ -207,16 +187,17 @@ namespace Health.WebAPI.Controllers
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == email && u.Role == RoleType.CareTaker && !u.IsDeleted);
 
-            if (user is null)
+            if (user == null)
             {
                 user = new User
                 {
-                    FullName = string.IsNullOrWhiteSpace(dto.FullName) ? "Caretaker" : dto.FullName!.Trim(),
+                    FullName = string.IsNullOrWhiteSpace(dto.FullName) ? "Caretaker" : dto.FullName.Trim(),
                     Email = email,
                     Role = RoleType.CareTaker,
                     Status = AccountStatus.Pending,
                     IsActive = true
                 };
+
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
             }
@@ -235,7 +216,7 @@ namespace Health.WebAPI.Controllers
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == email && u.Role == RoleType.CareTaker && !u.IsDeleted);
 
-            if (user is null)
+            if (user == null)
                 return BadRequest(new { message = "Invalid email or OTP." });
 
             var valid = await _otpService.VerifyOtpAsync(user.UserId, dto.Otp, "CaretakerEmailLogin");
@@ -246,66 +227,97 @@ namespace Health.WebAPI.Controllers
                 return Ok(new { status = user.Status.ToString(), message = "Email verified. Awaiting admin approval." });
 
             var (token, refreshToken) = _authService.GenerateTokensForUser(user);
-            // Set HttpOnly access token
+
+            // Set cookies — no token in body
             Response.Cookies.Append("access_token", token, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
+                Path = "/",
                 Expires = DateTime.UtcNow.AddHours(1)
             });
 
-            return Ok(new
+            Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
             {
-                role = user.Role.ToString(),
-                refreshToken,            // still sent in body
-                message = "Login successful."
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/",
+                Expires = DateTime.UtcNow.AddDays(7)
             });
 
+            return Ok(new { role = user.Role.ToString(), message = "Login successful." });
         }
 
+        // ------------------------- REFRESH TOKEN -------------------------
         [HttpPost("refresh")]
         [AllowAnonymous]
-        public IActionResult Refresh([FromBody] RefreshRequestDto dto)
+        public IActionResult Refresh()
         {
-            var result = _authService.RefreshToken(dto);
+            var refreshToken = Request.Cookies["refresh_token"];
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return Unauthorized(new { message = "Refresh token missing." });
+
+            var result = _authService.RefreshTokenByValue(refreshToken);
             if (!result.Success)
                 return Unauthorized(result);
 
-            // result.Data should contain new token + refresh token
-            if (result.Data is LoginResponseDto refreshData && refreshData.Token != null)
+            if (result.Data is LoginResponseDto data)
             {
-                Response.Cookies.Append("access_token", refreshData.Token, new CookieOptions
+                // Rotate tokens in cookies
+                Response.Cookies.Append("access_token", data.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None,
+                    Path = "/",
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
 
-                // Remove the token from the response body
-                refreshData.Token = null!;
+                Response.Cookies.Append("refresh_token", data.RefreshToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Path = "/",
+                    Expires = DateTime.UtcNow.AddDays(7)
+                });
+
+                data.Token = null!;
+                data.RefreshToken = null!;
             }
 
             return Ok(result);
         }
 
+        // ------------------------- LOGOUT -------------------------
         [HttpPost("logout")]
         public IActionResult Logout()
         {
+            var refreshToken = Request.Cookies["refresh_token"];
+
+            if (!string.IsNullOrWhiteSpace(refreshToken))
+                _authService.RevokeRefreshTokenByValue(refreshToken);
+
+            // Remove cookies
             Response.Cookies.Delete("access_token", new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None
+                SameSite = SameSiteMode.None,
+                Path = "/"
+            });
+
+            Response.Cookies.Delete("refresh_token", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/"
             });
 
             return Ok(new { message = "Logged out successfully" });
         }
-
-
-
-
-
     }
 }
