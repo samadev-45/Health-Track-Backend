@@ -6,6 +6,8 @@ using Health.Application.DTOs.File;
 using Health.Application.DTOs.MedicalRecord;
 using Health.Application.DTOs.Medication;
 using Health.Application.DTOs.Prescription;
+using Health.Application.DTOs.HealthMetric;
+using Health.Application.DTOs.Dashboard;
 using Health.Domain.Entities;
 
 namespace Health.Application.Helpers
@@ -14,108 +16,98 @@ namespace Health.Application.Helpers
     {
         public MappingProfile()
         {
-            // ----------------------
-            // USER → ENTITY MAPPING
-            // ----------------------
+            // ------------------ USER ------------------
             CreateMap<RegisterDto, User>()
-                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
-                .ForMember(dest => dest.RefreshTokens, opt => opt.Ignore())
-                .ForMember(dest => dest.Caretakers, opt => opt.Ignore())
-                .ForMember(dest => dest.PatientsUnderCare, opt => opt.Ignore())
-                .ForMember(dest => dest.MedicalRecords, opt => opt.Ignore())
-                .ForMember(dest => dest.AppointmentsAsPatient, opt => opt.Ignore())
-                .ForMember(dest => dest.AppointmentsAsDoctor, opt => opt.Ignore())
-                .ForMember(dest => dest.Medications, opt => opt.Ignore())
-                .ForMember(dest => dest.Notifications, opt => opt.Ignore())
-                .ForMember(dest => dest.ShareableLinks, opt => opt.Ignore())
-                .ForMember(dest => dest.UploadedFiles, opt => opt.Ignore())
-                .ForMember(dest => dest.BloodType, opt => opt.Ignore());
+                .ForMember(d => d.PasswordHash, o => o.Ignore())
+                .ForMember(d => d.RefreshTokens, o => o.Ignore())
+                .ForMember(d => d.Caretakers, o => o.Ignore())
+                .ForMember(d => d.PatientsUnderCare, o => o.Ignore())
+                .ForMember(d => d.MedicalRecords, o => o.Ignore())
+                .ForMember(d => d.AppointmentsAsPatient, o => o.Ignore())
+                .ForMember(d => d.AppointmentsAsDoctor, o => o.Ignore())
+                .ForMember(d => d.Medications, o => o.Ignore())
+                .ForMember(d => d.Notifications, o => o.Ignore())
+                .ForMember(d => d.ShareableLinks, o => o.Ignore())
+                .ForMember(d => d.UploadedFiles, o => o.Ignore())
+                .ForMember(d => d.BloodType, o => o.Ignore());
 
-            // ----------------------
-            // APPOINTMENT MAPPING
-            // ----------------------
+            // ------------------ APPOINTMENTS ------------------
             CreateMap<CreateAppointmentDto, Appointment>();
             CreateMap<RescheduleAppointmentDto, Appointment>();
 
             CreateMap<Appointment, AppointmentDto>()
-                .ForMember(dest => dest.DoctorName, opt => opt.MapFrom(src => src.Doctor.FullName))
-                .ForMember(dest => dest.PatientName, opt => opt.MapFrom(src => src.Patient.FullName))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+                .ForMember(d => d.DoctorName, o => o.MapFrom(s => s.Doctor.FullName))
+                .ForMember(d => d.PatientName, o => o.MapFrom(s => s.Patient.FullName))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
-            // ----------------------
-            // CONSULTATION → RESPONSE DTO
-            // ----------------------
+            // ------------------ CONSULTATION ------------------
             CreateMap<Consultation, ConsultationResponseDto>()
-                .ForMember(dest => dest.DoctorName,
-                    opt => opt.MapFrom(src => src.Doctor != null ? src.Doctor.FullName : null))
-                .ForMember(dest => dest.PatientName,
-                    opt => opt.MapFrom(src => src.Patient != null ? src.Patient.FullName : null))
-                .ForMember(dest => dest.Status,
-                    opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.HealthValues,
-                    opt => opt.MapFrom(src => src.HealthValues))
-                .ForMember(dest => dest.TrendSummary,
-                    opt => opt.MapFrom(src => src.TrendSummary))
-                .ForMember(dest => dest.CreatedOn,
-                    opt => opt.MapFrom(src => src.CreatedOn))
-                .ForMember(dest => dest.ModifiedOn,
-                    opt => opt.MapFrom(src => src.ModifiedOn));
+                .ForMember(d => d.DoctorName, o => o.MapFrom(s => s.Doctor.FullName))
+                .ForMember(d => d.PatientName, o => o.MapFrom(s => s.Patient.FullName))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
-            // ----------------------
-            // CREATE DTO → ENTITY MAPPING
-            // ----------------------
             CreateMap<ConsultationCreateDto, Consultation>()
-                .ForMember(dest => dest.AppointmentId, opt => opt.MapFrom(src => src.AppointmentId))
-                .ForMember(dest => dest.ChiefComplaint, opt => opt.MapFrom(src => src.ChiefComplaint))
-                .ForMember(dest => dest.Diagnosis, opt => opt.MapFrom(src => src.Diagnosis))
-                .ForMember(dest => dest.Advice, opt => opt.MapFrom(src => src.Advice))
-                .ForMember(dest => dest.DoctorNotes, opt => opt.MapFrom(src => src.DoctorNotes))
-                .ForMember(dest => dest.HealthValues, opt => opt.MapFrom(src => src.HealthValues))
-                .ForMember(dest => dest.FollowUpDate, opt => opt.MapFrom(src => src.FollowUpDate))
+                .ForMember(d => d.PatientId, o => o.Ignore())
+                .ForMember(d => d.DoctorId, o => o.Ignore());
 
-                // Assigned inside service
-                .ForMember(dest => dest.PatientId, opt => opt.Ignore())
-                .ForMember(dest => dest.DoctorId, opt => opt.Ignore());
-
-            CreateMap<Prescription, PrescriptionDto>()
-    .ForMember(d => d.Items, opt => opt.MapFrom(src => src.Items ?? new List<PrescriptionItem>()));
-
-            CreateMap<PrescriptionCreateDto, Prescription>()
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(dest => dest.CreatedByUserId, opt => opt.Ignore());
-
-            CreateMap<PrescriptionItemCreateDto, PrescriptionItem>();
-            CreateMap<PrescriptionItemUpdateDto, PrescriptionItem>();
-            CreateMap<PrescriptionItem, PrescriptionItemDto>();
-
+          
             CreateMap<FileStorage, FileDownloadDto>()
-           .ForMember(d => d.FileBytes, o => o.MapFrom(f => f.FileData));
+                .ForMember(d => d.FileBytes, o => o.MapFrom(f => f.FileData));
 
             CreateMap<FileStorage, FileDto>();
 
+            
             CreateMap<MedicalRecord, MedicalRecordListDto>();
-            CreateMap<MedicalRecord, MedicalRecordDto>()
-    .ForMember(d => d.FileName,
-        opt => opt.MapFrom(src => src.File != null ? src.File.FileName : null))
-    .ForMember(d => d.ContentType,
-        opt => opt.MapFrom(src => src.File != null ? src.File.ContentType : null))
-    .ForMember(d => d.FileSize,
-    opt => opt.MapFrom(src => src.File != null ? (long?)src.File.FileSize : null));
 
+            CreateMap<MedicalRecord, MedicalRecordDto>()
+                .ForMember(d => d.FileName, o => o.MapFrom(s => s.File.FileName))
+                .ForMember(d => d.ContentType, o => o.MapFrom(s => s.File.ContentType))
+                .ForMember(d => d.FileSize, o => o.MapFrom(s => s.File.FileSize));
+
+         
             CreateMap<Medication, MedicationDto>()
-        .ForMember(d => d.UnitName, opt => opt.MapFrom(src => src.Unit != null ? src.Unit.UnitName : null));
+                .ForMember(d => d.UnitName,
+                    o => o.MapFrom(s => s.Unit != null ? s.Unit.UnitName : null));
 
             CreateMap<Medication, MedicationListDto>();
             CreateMap<MedicationCreateDto, Medication>();
+
             CreateMap<Medication, MedicationScheduleItemDto>()
-                .ForMember(d => d.MedicationName, opt => opt.MapFrom(s => s.Name));
+                .ForMember(d => d.MedicationName, o => o.MapFrom(s => s.Name));
 
-            CreateMap<MedicalRecord, MedicalRecordDto>()
-    .ForMember(d => d.FileName, opt => opt.MapFrom(src => src.File.FileName))
-    .ForMember(d => d.ContentType, opt => opt.MapFrom(src => src.File.ContentType))
-    .ForMember(d => d.FileSize, opt => opt.MapFrom(src => src.File.FileSize));
+          
+            CreateMap<MetricType, HealthMetricDetailsDto>();
+            CreateMap<MetricType, HealthMetricListDto>();
+            CreateMap<MetricType, AbnormalMetricDto>();
+
+            CreateMap<HealthMetric, HealthMetricListDto>()
+                .ForMember(d => d.DisplayName, o => o.MapFrom(s => s.MetricType.DisplayName))
+                .ForMember(d => d.Unit, o => o.MapFrom(s => s.MetricType.Unit))
+                .ForMember(d => d.MetricCode, o => o.MapFrom(s => s.MetricType.MetricCode));
+
+            CreateMap<HealthMetric, HealthMetricDetailsDto>()
+                .ForMember(d => d.DisplayName, o => o.MapFrom(s => s.MetricType.DisplayName))
+                .ForMember(d => d.Unit, o => o.MapFrom(s => s.MetricType.Unit))
+                .ForMember(d => d.MetricCode, o => o.MapFrom(s => s.MetricType.MetricCode));
 
 
+            CreateMap<Appointment, NextAppointmentDto>()
+                .ForMember(d => d.DoctorName, o => o.MapFrom(s => s.Doctor.FullName));
+
+           
+
+            CreateMap<Notification, NotificationDto>();
+
+            // in MappingProfile
+            CreateMap<Appointment, DoctorAppointmentItemDto>()
+                .ForMember(d => d.PatientName, o => o.MapFrom(s => s.Patient.FullName));
+
+            CreateMap<Consultation, DoctorConsultationItemDto>()
+                .ForMember(d => d.PatientName, o => o.MapFrom(s => s.Patient.FullName));
+
+            CreateMap<User, DoctorPatientItemDto>()
+                .ForMember(d => d.Age, o => o.MapFrom(u => u.DateOfBirth.HasValue ? (int?)DateTime.UtcNow.Year - u.DateOfBirth.Value.Year ?? 0 : 0))
+                .ForMember(d => d.Gender, o => o.MapFrom(u => u.Gender.ToString()));
 
         }
     }

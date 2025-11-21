@@ -57,7 +57,8 @@ namespace Health.Infrastructure
             services.AddScoped<IMedicationReadRepository, MedicationReadRepository>();
             services.AddScoped<IMedicationService, MedicationService>();
 
-
+            services.AddScoped<IMedicalRecordService, MedicalRecordService>();
+            services.AddScoped<IMedicalRecordReadRepository, MedicalRecordReadRepository>();
             services.AddScoped<IHealthMetricService, HealthMetricService>();
 
             services.AddScoped<IHealthMetricWriteRepository, HealthMetricWriteRepository>();
@@ -65,7 +66,10 @@ namespace Health.Infrastructure
 
             services.AddScoped<IGenericRepository<HealthMetric>, GenericRepository<HealthMetric>>();
             services.AddScoped<IGenericRepository<MetricType>, GenericRepository<MetricType>>();
-
+            services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IDashboardReadRepository, DashboardReadRepository>();
+            services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
+            services.AddScoped<IDoctorDashboardReadRepository, DoctorDashboardReadRepository>();
 
             return services;
         }
