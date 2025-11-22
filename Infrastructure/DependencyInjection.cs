@@ -70,6 +70,8 @@ namespace Health.Infrastructure
             services.AddScoped<IDashboardReadRepository, DashboardReadRepository>();
             services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
             services.AddScoped<IDoctorDashboardReadRepository, DoctorDashboardReadRepository>();
+            services.AddScoped<IAdminAnalyticsReadRepository, AdminAnalyticsReadRepository>();
+            services.AddScoped<IAdminAnalyticsService, AdminAnalyticsService>();
 
             return services;
         }
