@@ -43,6 +43,9 @@ namespace Health.Domain.Entities
         public bool IsVerified { get; set; } = false;
 
         // Navigations
+        // inside User class navigations
+        public DoctorProfile? DoctorProfile { get; set; }
+
         public BloodType? BloodType { get; set; }
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public ICollection<CaretakerAccess> Caretakers { get; set; } = new List<CaretakerAccess>();

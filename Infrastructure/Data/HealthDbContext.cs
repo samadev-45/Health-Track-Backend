@@ -43,6 +43,8 @@ namespace Health.Infrastructure.Data
         public DbSet<Prescription> Prescriptions { get; set; } = null!;
         public DbSet<PrescriptionItem> PrescriptionItems { get; set; } = null!;
         public DbSet<MedicalRecord> MedicalRecords { get; set; } = null!;
+        public DbSet<DoctorProfile> DoctorProfiles { get; set; }
+
         public DbSet<RecordType> RecordTypes { get; set; } = null!;
         public DbSet<MetricType> MetricTypes { get; set; } = null!; 
         //  Automatically
@@ -118,7 +120,11 @@ namespace Health.Infrastructure.Data
                                     .HasForeignKey(u => u.BloodTypeId)
                                     .OnDelete(DeleteBehavior.SetNull);
                 builder.Property(u => u.Address).HasMaxLength(500);
+                modelBuilder.Entity<DoctorProfile>()
+       .Property(d => d.AvailableDays)
+       .HasConversion<int>();
 
+                base.OnModelCreating(modelBuilder);
                 builder.Property(u => u.EmergencyContactName).HasMaxLength(100);
                 builder.Property(u => u.EmergencyContactPhone).HasMaxLength(20);
                 builder.Property(u => u.EmergencyContactRelationship).HasMaxLength(50);

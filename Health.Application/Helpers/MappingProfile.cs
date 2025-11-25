@@ -109,6 +109,16 @@ namespace Health.Application.Helpers
                 .ForMember(d => d.Age, o => o.MapFrom(u => u.DateOfBirth.HasValue ? (int?)DateTime.UtcNow.Year - u.DateOfBirth.Value.Year ?? 0 : 0))
                 .ForMember(d => d.Gender, o => o.MapFrom(u => u.Gender.ToString()));
 
+            // ------------------ PRESCRIPTION ------------------
+            CreateMap<PrescriptionCreateDto, Prescription>();
+            CreateMap<Prescription, PrescriptionDto>();
+            CreateMap<Prescription, PrescriptionDto>();
+            CreateMap<PrescriptionItemCreateDto, PrescriptionItem>();
+            CreateMap<PrescriptionItem, PrescriptionItemDto>();
+
+            CreateMap<PrescriptionItemUpdateDto, PrescriptionItem>();
+
+
         }
     }
 }

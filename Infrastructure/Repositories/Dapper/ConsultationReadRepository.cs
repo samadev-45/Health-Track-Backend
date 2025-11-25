@@ -12,6 +12,7 @@ using System.Data;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Health.Infrastructure.Repositories.Dapper
 {
@@ -60,9 +61,6 @@ namespace Health.Infrastructure.Repositories.Dapper
             };
         }
 
-        // ------------------------------------------------------------
-        // PATIENT LIST
-        // ------------------------------------------------------------
         public async Task<PagedResult<ConsultationListDto>> GetConsultationsByPatientAsync(
             int patientId,
             int? status = null,
@@ -96,51 +94,71 @@ namespace Health.Infrastructure.Repositories.Dapper
             };
         }
 
-        // ------------------------------------------------------------
-        // CONSULTATION DETAILS
-        // ------------------------------------------------------------
+
+        //public async Task<ConsultationDetailsDto?> GetConsultationDetailsAsync(int consultationId)
+        //{
+        //    using var conn = new SqlConnection(_connectionString);
+
+        //    using var multi = await conn.QueryMultipleAsync(
+        //        "sp_GetConsultationDetails",
+        //        new { ConsultationId = consultationId },
+        //        commandType: CommandType.StoredProcedure);
+
+        //    var details = await multi.ReadFirstOrDefaultAsync<ConsultationDetailsDto>();
+
+        //    if (details == null)
+        //        return null;
+
+        //    // Deserialize JSON for HealthValues
+        //    if (!string.IsNullOrWhiteSpace(details.HealthValuesJson))
+        //    {
+        //        try
+        //        {
+        //            details.HealthValues = JsonSerializer.Deserialize<Dictionary<string, decimal>>(
+        //                details.HealthValuesJson,
+        //                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        //            );
+        //        }
+        //        catch
+        //        {
+        //            details.HealthValues = new Dictionary<string, decimal>();
+        //        }
+        //    }
+
+        //    // Prescription items
+        //    details.PrescriptionItems = (await multi.ReadAsync<PrescriptionItemDto>()).ToList();
+
+        //    // Attachments
+        //    details.Attachments = (await multi.ReadAsync<FileDto>()).ToList();
+
+        //    return details;
+        //}
+
         public async Task<ConsultationDetailsDto?> GetConsultationDetailsAsync(int consultationId)
         {
-            using var conn = new SqlConnection(_connectionString);
+            using var connection = new SqlConnection(_connectionString);
 
-            using var multi = await conn.QueryMultipleAsync(
-                "sp_GetConsultationDetails",
+            using var multi = await connection.QueryMultipleAsync("sp_GetConsultationDetails",
                 new { ConsultationId = consultationId },
                 commandType: CommandType.StoredProcedure);
 
             var details = await multi.ReadFirstOrDefaultAsync<ConsultationDetailsDto>();
+            if (details == null) return null;
 
-            if (details == null)
-                return null;
-
-            // Deserialize JSON for HealthValues
-            if (!string.IsNullOrWhiteSpace(details.HealthValuesJson))
+            // Parse JSON into actual dictionary
+            if (!string.IsNullOrEmpty(details.HealthValuesJson))
             {
-                try
-                {
-                    details.HealthValues = JsonSerializer.Deserialize<Dictionary<string, decimal>>(
-                        details.HealthValuesJson,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                    );
-                }
-                catch
-                {
-                    details.HealthValues = new Dictionary<string, decimal>();
-                }
+                details.HealthValues = JsonConvert.DeserializeObject<Dictionary<string, decimal>>(details.HealthValuesJson);
             }
 
-            // Prescription items
+            // Read the prescription items
             details.PrescriptionItems = (await multi.ReadAsync<PrescriptionItemDto>()).ToList();
 
-            // Attachments
+            // Read the files
             details.Attachments = (await multi.ReadAsync<FileDto>()).ToList();
 
             return details;
         }
-
-        // ------------------------------------------------------------
-        // FILE LIST
-        // ------------------------------------------------------------
         public async Task<PagedResult<FileDto>> GetConsultationFilesAsync(
             int consultationId,
             int page = 1,

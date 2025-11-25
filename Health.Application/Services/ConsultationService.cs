@@ -32,6 +32,7 @@ namespace Health.Application.Services
         private readonly IEmailSenderService _emailSender;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly HealthMetricEngine _metricEngine;
+
         public ConsultationService(
             IConsultationWriteRepository consultationRepo,
             IConsultationReadRepository consultationReadRepo,
@@ -54,9 +55,8 @@ namespace Health.Application.Services
             _metricEngine = metricEngine;
         }
 
-        // ------------------------------------------------------------
-        // HELPER: Get current user ID from JWT
-        // ------------------------------------------------------------
+        // -------------------- Helpers --------------------
+
         private int GetCurrentUserId()
         {
             var userId = _contextAccessor.HttpContext?.User?
@@ -68,33 +68,37 @@ namespace Health.Application.Services
             return int.Parse(userId);
         }
 
-        // ------------------------------------------------------------
-        // HELPER: Check doctor ownership
-        // ------------------------------------------------------------
+        private bool CurrentUserIsInRole(string role)
+        {
+            return _contextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
+        }
+
         private void EnsureDoctorOwnership(int assignedDoctorId)
         {
             int currentUserId = GetCurrentUserId();
-            if (currentUserId != assignedDoctorId)
-                throw new UnauthorizedAccessException("You are not the assigned doctor for this consultation.");
+            if (currentUserId != assignedDoctorId && !CurrentUserIsInRole("Admin"))
+                throw new UnauthorizedAccessException("You are not the assigned doctor for this resource.");
         }
 
-        // ------------------------------------------------------------
-        // HELPER: Check patient ownership
-        // ------------------------------------------------------------
         private void EnsurePatientOwnership(int assignedPatientId)
         {
             int currentUserId = GetCurrentUserId();
-            if (currentUserId != assignedPatientId)
-                throw new UnauthorizedAccessException("You are not the owner of this consultation.");
+            if (currentUserId != assignedPatientId && !CurrentUserIsInRole("Admin"))
+                throw new UnauthorizedAccessException("You are not the owner of this resource.");
         }
 
-        // ------------------------------------------------------------
-        // 1. Create Consultation (Doctor Only)
-        // ------------------------------------------------------------
+        
+        private void EnsureDoctorOrPatientOwnership(int assignedDoctorId, int assignedPatientId)
+        {
+            int currentUserId = GetCurrentUserId();
+            if (currentUserId != assignedDoctorId && currentUserId != assignedPatientId && !CurrentUserIsInRole("Admin"))
+                throw new UnauthorizedAccessException("You are not authorized to access this consultation.");
+        }
+
         public async Task<ConsultationResponseDto> CreateConsultationAsync(
-    int appointmentId,
-    ConsultationCreateDto dto,
-    CancellationToken ct = default)
+            int appointmentId,
+            ConsultationCreateDto dto,
+            CancellationToken ct = default)
         {
             var appointment = await _appointmentRepo.GetByIdAsync(appointmentId, ct)
                 ?? throw new InvalidOperationException("Appointment not found.");
@@ -102,6 +106,7 @@ namespace Health.Application.Services
             if (appointment.Status != AppointmentStatus.Completed)
                 throw new InvalidOperationException("Consultation can only be created after appointment completion.");
 
+            // Only assigned doctor can create a consultation for the appointment (or Admin)
             EnsureDoctorOwnership(appointment.DoctorId);
 
             var consultation = new Consultation
@@ -113,21 +118,21 @@ namespace Health.Application.Services
                 Diagnosis = dto.Diagnosis,
                 Advice = dto.Advice,
                 DoctorNotes = dto.DoctorNotes,
-                HealthValues = dto.HealthValues,   
+                HealthValues = dto.HealthValues,
                 FollowUpDate = dto.FollowUpDate,
                 Status = ConsultationStatus.Draft,
-                CreatedOn = DateTime.UtcNow
+                CreatedOn = DateTime.UtcNow,
+                CreatedBy = GetCurrentUserId()
             };
+
             consultation.TrendSummary = _metricEngine.BuildTrendSummary(dto.HealthValues);
 
             await _consultationRepo.AddAsync(consultation);
+
             return _mapper.Map<ConsultationResponseDto>(consultation);
         }
 
-
-        // ------------------------------------------------------------
-        // 2. Get Consultations (Doctor)
-        // ------------------------------------------------------------
+  
         public async Task<PagedResult<ConsultationListDto>> GetConsultationsByDoctorAsync(
             int doctorId,
             int? status = null,
@@ -136,16 +141,14 @@ namespace Health.Application.Services
             int page = 1,
             int pageSize = 10)
         {
-        // Doctor can only view their own list
+           
             EnsureDoctorOwnership(doctorId);
 
             return await _consultationReadRepo.GetConsultationsByDoctorAsync(
                 doctorId, status, fromDate, toDate, page, pageSize);
         }
 
-        // ------------------------------------------------------------
-        // 3. Get Consultations (Patient)
-        // ------------------------------------------------------------
+        
         public async Task<PagedResult<ConsultationListDto>> GetConsultationsByPatientAsync(
             int patientId,
             int? status = null,
@@ -154,16 +157,14 @@ namespace Health.Application.Services
             int page = 1,
             int pageSize = 10)
         {
-            // ✔ Patient can only view their own list
+           
             EnsurePatientOwnership(patientId);
 
             return await _consultationReadRepo.GetConsultationsByPatientAsync(
                 patientId, status, fromDate, toDate, page, pageSize);
         }
 
-        // ------------------------------------------------------------
-        // 4. Get Consultation Details
-        // ------------------------------------------------------------
+        
         public async Task<ConsultationDetailsDto?> GetConsultationDetailsAsync(
             int consultationId,
             CancellationToken ct = default)
@@ -172,21 +173,13 @@ namespace Health.Application.Services
             if (details == null)
                 return null;
 
-            // Ownership validation
-            int currentUserId = GetCurrentUserId();
-
-            bool isDoctorOwner = details.DoctorId == currentUserId;
-            bool isPatientOwner = details.PatientId == currentUserId;
-
-            if (!(isDoctorOwner || isPatientOwner))
-                throw new UnauthorizedAccessException("You are not allowed to view this consultation.");
+            // Ownership validation: doctor or patient or admin
+            EnsureDoctorOrPatientOwnership(details.DoctorId, details.PatientId);
 
             return details;
         }
 
-        // ------------------------------------------------------------
-        // 5. Upload Attachment (Doctor or Patient)
-        // ------------------------------------------------------------
+      
         public async Task<FileDto> UploadAttachmentAsync(
             int consultationId,
             UploadFileDto dto,
@@ -196,16 +189,16 @@ namespace Health.Application.Services
                 ?? throw new InvalidOperationException("Consultation not found.");
 
             int currentUserId = GetCurrentUserId();
-            bool isDoctor = _contextAccessor.HttpContext.User.IsInRole("Doctor");
-            bool isPatient = _contextAccessor.HttpContext.User.IsInRole("Patient");
+            bool isDoctor = CurrentUserIsInRole("Doctor");
+            bool isPatient = CurrentUserIsInRole("Patient");
 
-            if (isDoctor && currentUserId != consultation.DoctorId)
+            if (isDoctor && currentUserId != consultation.DoctorId && !CurrentUserIsInRole("Admin"))
                 throw new UnauthorizedAccessException("You are not the assigned doctor.");
 
-            if (isPatient && currentUserId != consultation.PatientId)
+            if (isPatient && currentUserId != consultation.PatientId && !CurrentUserIsInRole("Admin"))
                 throw new UnauthorizedAccessException("You cannot upload for another patient.");
 
-            byte[] bytes = Convert.FromBase64String(dto.Base64Data);
+            byte[] bytes = Convert.FromBase64String(dto.Base64Data ?? string.Empty);
 
             var file = new FileStorage
             {
@@ -232,9 +225,7 @@ namespace Health.Application.Services
             };
         }
 
-        // ------------------------------------------------------------
-        // 6. Finalize Consultation (Doctor Only)
-        // ------------------------------------------------------------
+     
         public async Task<ConsultationResponseDto> FinalizeConsultationAsync(
             int consultationId,
             CancellationToken ct = default)
@@ -242,22 +233,21 @@ namespace Health.Application.Services
             var consultation = await _consultationRepo.GetByIdAsync(consultationId, ct)
                 ?? throw new InvalidOperationException("Consultation not found.");
 
-            //  Only the assigned doctor
+            // Only the assigned doctor (or Admin) can finalize
             EnsureDoctorOwnership(consultation.DoctorId);
 
             if (consultation.Status == ConsultationStatus.Finalized)
                 throw new InvalidOperationException("Consultation already finalized.");
 
-            var prescription = consultation.Prescriptions
-                ?.OrderByDescending(p => p.CreatedOn).FirstOrDefault();
+            var prescription = consultation.Prescriptions?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
 
             if (prescription == null)
             {
                 prescription = new Prescription
                 {
                     ConsultationId = consultation.ConsultationId,
-                    CreatedBy = consultation.DoctorId,
-                    CreatedOn = DateTime.UtcNow
+                    CreatedByUserId = consultation.DoctorId,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 await _consultationRepo.AddPrescriptionAsync(prescription, ct);
@@ -320,31 +310,28 @@ namespace Health.Application.Services
                     );
                 }
             }
-            catch { }
+            catch
+            {
+                // swallow email errors - not critical
+            }
 
             return _mapper.Map<ConsultationResponseDto>(consultation);
         }
 
-        // ------------------------------------------------------------
-        // 7. Update Consultation (not implemented)
-        // ------------------------------------------------------------
+   
         public async Task<ConsultationResponseDto> UpdateConsultationAsync(
-    int consultationId,
-    ConsultationUpdateDto dto,
-    CancellationToken ct = default)
+            int consultationId,
+            ConsultationUpdateDto dto,
+            CancellationToken ct = default)
         {
-            // 1. Load consultation
             var consultation = await _consultationRepo.GetByIdAsync(consultationId, ct)
                 ?? throw new InvalidOperationException("Consultation not found.");
 
-            // 2. Only the assigned doctor can update
             EnsureDoctorOwnership(consultation.DoctorId);
 
-            // 3. Only editable if status = Draft
             if (consultation.Status != ConsultationStatus.Draft)
                 throw new InvalidOperationException("Only draft consultations can be edited.");
 
-            // 4. Optional: enforce 24-hour editing window
             if (consultation.CreatedOn.AddHours(24) < DateTime.UtcNow)
                 throw new InvalidOperationException("Consultation can no longer be edited (24-hour window expired).");
 
@@ -352,9 +339,6 @@ namespace Health.Application.Services
             consultation.Diagnosis = dto.Diagnosis ?? consultation.Diagnosis;
             consultation.Advice = dto.Advice ?? consultation.Advice;
             consultation.DoctorNotes = dto.DoctorNotes ?? consultation.DoctorNotes;
-            consultation.HealthValues = dto.HealthValues ?? consultation.HealthValues;
-
-            consultation.FollowUpDate = dto.FollowUpDate ?? consultation.FollowUpDate;
 
             if (dto.HealthValues != null)
             {
@@ -362,16 +346,14 @@ namespace Health.Application.Services
                 consultation.TrendSummary = _metricEngine.BuildTrendSummary(dto.HealthValues);
             }
 
+            consultation.FollowUpDate = dto.FollowUpDate ?? consultation.FollowUpDate;
             consultation.ModifiedOn = DateTime.UtcNow;
             consultation.ModifiedBy = consultation.DoctorId;
 
-            // 6. Save changes
             await _consultationRepo.UpdateAsync(consultation, ct);
 
-            // 7. Return mapped response
             return _mapper.Map<ConsultationResponseDto>(consultation);
         }
-
 
 
 
@@ -383,17 +365,16 @@ namespace Health.Application.Services
             if (file.ConsultationId == null)
                 throw new InvalidOperationException("File not linked to consultation.");
 
-            var consultation = file.Consultation
-                ?? await _consultationRepo.GetByIdAsync(file.ConsultationId.Value, ct);
+            var consultation = file.Consultation ?? await _consultationRepo.GetByIdAsync(file.ConsultationId.Value, ct);
 
             int currentUserId = GetCurrentUserId();
-            bool isDoctor = _contextAccessor.HttpContext.User.IsInRole("Doctor");
-            bool isPatient = _contextAccessor.HttpContext.User.IsInRole("Patient");
+            bool isDoctor = CurrentUserIsInRole("Doctor");
+            bool isPatient = CurrentUserIsInRole("Patient");
 
-            if (isDoctor && consultation.DoctorId != currentUserId)
+            if (isDoctor && consultation.DoctorId != currentUserId && !CurrentUserIsInRole("Admin"))
                 throw new UnauthorizedAccessException("You are not the assigned doctor.");
 
-            if (isPatient && consultation.PatientId != currentUserId)
+            if (isPatient && consultation.PatientId != currentUserId && !CurrentUserIsInRole("Admin"))
                 throw new UnauthorizedAccessException("You cannot download this file.");
 
             return new FileDownloadDto
@@ -404,23 +385,28 @@ namespace Health.Application.Services
             };
         }
 
-        //CreatePrescription
+        // -
+
         public async Task<PrescriptionDto> CreateOrGetPrescriptionAsync(int consultationId, PrescriptionCreateDto dto, CancellationToken ct = default)
         {
             var consultation = await _consultationRepo.GetByIdAsync(consultationId, ct)
                 ?? throw new InvalidOperationException("Consultation not found.");
 
-            EnsureDoctorOwnership(consultation.DoctorId);
+            
+            EnsureDoctorOrPatientOwnership(consultation.DoctorId, consultation.PatientId);
 
             var existing = await _consultationRepo.GetPrescriptionByConsultationIdAsync(consultationId, ct);
             if (existing != null)
             {
-                // Update notes if provided
+                
                 if (!string.IsNullOrWhiteSpace(dto.Notes))
                 {
                     existing.Notes = dto.Notes;
-                    await _consultationRepo.UpdateAsync(consultation, ct); // if you store prescription changes through context save, else save directly
+                    
+                    var updateconsultation = await _consultationRepo.GetByIdAsync(consultationId, ct);
+                    await _consultationRepo.UpdateAsync(updateconsultation, ct);
                 }
+
                 return _mapper.Map<PrescriptionDto>(existing);
             }
 
@@ -434,7 +420,6 @@ namespace Health.Application.Services
 
             await _consultationRepo.AddPrescriptionAsync(prescription, ct);
 
-            // add items if any
             if (dto.Items != null && dto.Items.Any())
             {
                 foreach (var itemDto in dto.Items)
@@ -456,33 +441,27 @@ namespace Health.Application.Services
             var prescription = await _consultationRepo.GetPrescriptionByConsultationIdAsync(consultationId, ct);
             if (prescription == null) return null;
 
-            // Ownership
+            // Authorize: doctor, patient or admin
             var consultation = await _consultationRepo.GetByIdAsync(consultationId, ct)
                 ?? throw new InvalidOperationException("Consultation not found.");
 
-            EnsureDoctorOwnership(consultation.DoctorId);
+            EnsureDoctorOrPatientOwnership(consultation.DoctorId, consultation.PatientId);
 
             return _mapper.Map<PrescriptionDto>(prescription);
         }
 
         public async Task<PrescriptionItemDto> AddPrescriptionItemAsync(int prescriptionId, PrescriptionItemCreateDto dto, CancellationToken ct = default)
         {
-            // Load prescription
-            var prescription = await _consultationRepo.GetByIdAsync((await _consultationRepo.GetPrescriptionByConsultationIdAsync(0, ct))?.ConsultationId ?? 0, ct);
-            // simpler: load by prescriptionId via repo (you may implement GetPrescriptionByIdAsync if preferred)
-
-            // For clarity implement GetPrescriptionByIdAsync in repo — else you can query Prescription directly from context
-
             var pres = await _consultationRepo.GetPrescriptionByIdAsync(prescriptionId, ct)
                 ?? throw new InvalidOperationException("Prescription not found.");
 
-            // ensure ownership via consultation
             var consultation = pres.Consultation ?? await _consultationRepo.GetByIdAsync(pres.ConsultationId, ct);
+
+            // Only doctor (or admin) can add items — but if you want patients to request meds, adjust accordingly.
             EnsureDoctorOwnership(consultation.DoctorId);
 
             var item = _mapper.Map<PrescriptionItem>(dto);
             item.PrescriptionId = prescriptionId;
-
             await _consultationRepo.AddPrescriptionItemAsync(item, ct);
 
             return _mapper.Map<PrescriptionItemDto>(item);
@@ -493,8 +472,8 @@ namespace Health.Application.Services
             var item = await _consultationRepo.GetPrescriptionItemByIdAsync(itemId, ct)
                 ?? throw new InvalidOperationException("Prescription item not found.");
 
-            var prescription = item.Prescription ?? await _consultationRepo.GetPrescriptionByIdAsync(item.PrescriptionId, ct);
-            var consultation = prescription.Consultation ?? await _consultationRepo.GetByIdAsync(prescription.ConsultationId, ct);
+            var pres = item.Prescription ?? await _consultationRepo.GetPrescriptionByIdAsync(item.PrescriptionId, ct);
+            var consultation = pres.Consultation ?? await _consultationRepo.GetByIdAsync(pres.ConsultationId, ct);
 
             EnsureDoctorOwnership(consultation.DoctorId);
 
@@ -510,18 +489,18 @@ namespace Health.Application.Services
 
             return _mapper.Map<PrescriptionItemDto>(item);
         }
+
         public async Task DeletePrescriptionItemAsync(int itemId, CancellationToken ct = default)
         {
             var item = await _consultationRepo.GetPrescriptionItemByIdAsync(itemId, ct)
                 ?? throw new InvalidOperationException("Prescription item not found.");
 
-            var prescription = item.Prescription ?? await _consultationRepo.GetPrescriptionByIdAsync(item.PrescriptionId, ct);
-            var consultation = prescription.Consultation ?? await _consultationRepo.GetByIdAsync(prescription.ConsultationId, ct);
+            var pres = item.Prescription ?? await _consultationRepo.GetPrescriptionByIdAsync(item.PrescriptionId, ct);
+            var consultation = pres.Consultation ?? await _consultationRepo.GetByIdAsync(pres.ConsultationId, ct);
 
             EnsureDoctorOwnership(consultation.DoctorId);
 
             await _consultationRepo.DeletePrescriptionItemAsync(itemId, ct);
         }
-
     }
 }

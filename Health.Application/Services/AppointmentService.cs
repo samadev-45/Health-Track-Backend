@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Health.Application.Common;
 using Health.Application.Configuration;
+using Health.Application.DTOs.Doctor;
 
 using Health.Application.DTOs.Appointment;
 
@@ -76,21 +77,31 @@ namespace Health.Application.Services
         {
             var (appointments, total) = await _readRepo.GetAppointmentsByPatientAsync(patientId, status, page, pageSize, ct);
 
-            var rows = appointments.Select(a => new PatientApptRowDto
+            var rows = new List<PatientApptRowDto>();
+
+            foreach (var a in appointments)
             {
-                AppointmentId = a.AppointmentId,
-                DoctorId = a.DoctorId,
-                AppointmentDate = a.AppointmentDate,
-                AppointmentTime = a.AppointmentTime,
-                Status = (int)a.Status,
-                PatientNotes = a.PatientNotes,
-                DoctorNotes = a.DoctorNotes,
-                RejectionReason = a.RejectionReason,
-                FollowUpDate = a.FollowUpDate,
-                Hospital = a.Hospital,
-                Location = a.Location,
-                DoctorName = a.Doctor?.FullName ?? string.Empty
-            });
+                var doctor = a.Doctor;
+                if (doctor == null)
+                    doctor = await _userRepo.GetByIdAsync(a.DoctorId, ct);
+
+                rows.Add(new PatientApptRowDto
+                {
+                    AppointmentId = a.AppointmentId,
+                    DoctorId = a.DoctorId,
+                    AppointmentDate = a.AppointmentDate,
+                    AppointmentTime = a.AppointmentTime,
+                    Status = (int)a.Status,
+                    PatientNotes = a.PatientNotes,
+                    DoctorNotes = a.DoctorNotes,
+                    RejectionReason = a.RejectionReason,
+                    FollowUpDate = a.FollowUpDate,
+                    Hospital = a.Hospital,
+                    Location = a.Location,
+                    DoctorName = doctor?.FullName ?? string.Empty
+                });
+            }
+
 
             return (rows, total);
         }
@@ -106,8 +117,12 @@ namespace Health.Application.Services
                 throw new InvalidOperationException("Patient not found or inactive.");
 
             var doctor = await _userRepo.GetByIdAsync(dto.DoctorId, ct);
-            if (doctor == null || doctor.IsDeleted || doctor.Role != RoleType.Doctor)
-                throw new InvalidOperationException("Doctor not found or inactive.");
+            if (doctor == null)
+                throw new InvalidOperationException("Doctor does not exist.");
+
+            if (doctor.Role != RoleType.Doctor)
+                throw new InvalidOperationException("Selected user is not a doctor.");
+
 
             //  Check last cancellation time
             var lastCancelled = await _readRepo.GetLastCancelledAppointmentAsync(patientId, ct);
@@ -198,6 +213,7 @@ namespace Health.Application.Services
                 OldAppointmentDate = oldDate,
                 NewAppointmentDate = dto.NewAppointmentDate
             }, ct);
+            Console.WriteLine($"BODY RECEIVED: {System.Text.Json.JsonSerializer.Serialize(dto)}");
 
             return _mapper.Map<AppointmentDto>(appointment);
         }
@@ -417,8 +433,46 @@ namespace Health.Application.Services
                 ChangedAt = h.ChangedAt
             });
         }
-        
 
+        public async Task<DoctorAvailabilityDto> GetAvailableSlotsAsync(int doctorId, DateTime date, CancellationToken ct = default)
+        {
+            var doctor = await _userRepo.GetByIdAsync(doctorId, ct);
+            if (doctor == null || doctor.Role != RoleType.Doctor)
+                throw new InvalidOperationException("Invalid doctor");
+
+            var profile = await _userRepo.GetDoctorProfileAsync(doctorId, ct); // see next error!
+            if (profile == null)
+                throw new InvalidOperationException("Doctor profile missing");
+
+            // check available days
+            var day = date.DayOfWeek;
+            if (!profile.AvailableDays.HasFlag((AvailableDays)(1 << (int)day)))
+                return new DoctorAvailabilityDto
+                {
+                    Hospital = profile.Hospital,
+                    Location = profile.Location,
+                    Slots = new List<string>()
+                };
+
+            var from = profile.AvailableFrom ?? TimeSpan.Zero;
+            var to = profile.AvailableTo ?? TimeSpan.Zero;
+
+            var bookedAppointments = await _readRepo.GetAppointmentsByDoctorAndDateAsync(doctorId, date, ct);
+            var bookedTimes = bookedAppointments.Select(a => a.AppointmentTime).ToHashSet();
+
+            var slots = new List<string>();
+            for (var t = from; t < to; t = t.Add(TimeSpan.FromMinutes(30)))
+            {
+                if (!bookedTimes.Contains(t))
+                    slots.Add(t.ToString(@"hh\:mm"));
+            }
+            return new DoctorAvailabilityDto
+            {
+                Hospital = profile.Hospital,
+                Location = profile.Location,
+                Slots = slots
+            };
+        }
 
 
 

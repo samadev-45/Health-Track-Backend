@@ -92,6 +92,27 @@ namespace Health.Infrastructure.Repositories.Dapper
             );
         }
 
+        public async Task<IEnumerable<Appointment>> GetAppointmentsByDoctorAndDateAsync(
+    int doctorId, DateTime date, CancellationToken ct = default)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            await connection.OpenAsync(ct);
+
+            var sql = @"
+        SELECT *
+        FROM Appointments
+        WHERE DoctorId = @DoctorId
+          AND AppointmentDate = @Date
+          AND IsDeleted = 0";
+
+            return await connection.QueryAsync<Appointment>(sql, new
+            {
+                DoctorId = doctorId,
+                Date = date.Date
+            });
+        }
+
+
 
 
     }

@@ -1,4 +1,5 @@
 using Health.Application.DTOs.Appointment;
+using Health.Application.DTOs.Doctor;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,5 +49,11 @@ namespace Health.Application.Interfaces
         Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentHistoryAsync(
             int appointmentId,
             CancellationToken ct = default);
+        Task<DoctorAvailabilityDto> GetAvailableSlotsAsync(
+    int doctorId,
+    DateTime date,
+    CancellationToken ct = default);
+        
+
     }
 }

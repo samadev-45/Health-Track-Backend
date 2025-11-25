@@ -20,6 +20,10 @@ namespace Health.Application.Interfaces.Dapper
      CancellationToken ct = default);
         Task<AppointmentHistory?> GetLastCancelledAppointmentAsync(int patientId, CancellationToken ct = default);
 
+        Task<IEnumerable<Appointment>> GetAppointmentsByDoctorAndDateAsync(
+    int doctorId,
+    DateTime date,
+    CancellationToken ct = default);
 
     }
 }
