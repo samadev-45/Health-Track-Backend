@@ -76,6 +76,8 @@ namespace Health.Infrastructure
             services.AddScoped<IDoctorProfileService, DoctorProfileService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<IProfileService, ProfileService>();
+
             return services;
         }
     }

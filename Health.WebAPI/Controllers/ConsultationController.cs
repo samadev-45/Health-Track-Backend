@@ -58,9 +58,7 @@ namespace Health.WebAPI.Controllers
             return Ok(result);
         }
 
-        // ---------------------------------------------------------
-        // 3. FINALIZE CONSULTATION (Doctor only)
-        // ---------------------------------------------------------
+        
         [HttpPost("{consultationId}/finalize")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> FinalizeConsultation(int consultationId, CancellationToken ct)
@@ -71,9 +69,7 @@ namespace Health.WebAPI.Controllers
             return Ok(result);
         }
 
-        // ---------------------------------------------------------
-        // 4. UPLOAD ATTACHMENT (Doctor or Patient)
-        // ---------------------------------------------------------
+        
         [HttpPost("{consultationId}/attachments")]
         [Authorize(Roles = "Doctor,Patient")]
         public async Task<IActionResult> UploadAttachment(
@@ -102,9 +98,6 @@ namespace Health.WebAPI.Controllers
             return Ok(uploaded);
         }
 
-        // ---------------------------------------------------------
-        // 5. GET CONSULTATIONS (Doctor only)
-        // ---------------------------------------------------------
         [HttpGet("doctor")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> GetConsultationsByDoctor(
@@ -122,9 +115,7 @@ namespace Health.WebAPI.Controllers
             return Ok(result);
         }
 
-        // ---------------------------------------------------------
-        // 6. GET CONSULTATIONS (Patient only)
-        // ---------------------------------------------------------
+        
         [HttpGet("patient")]
         [Authorize(Roles = "Patient")]
         public async Task<IActionResult> GetConsultationsByPatient(
@@ -142,9 +133,7 @@ namespace Health.WebAPI.Controllers
             return Ok(result);
         }
 
-        // ---------------------------------------------------------
-        // 7. GET CONSULTATION DETAILS (Doctor/Patient)
-        // ---------------------------------------------------------
+        
         [HttpGet("{consultationId}")]
         [Authorize(Roles = "Doctor,Patient")]
         public async Task<IActionResult> GetConsultationDetails(int consultationId, CancellationToken ct)
@@ -158,9 +147,7 @@ namespace Health.WebAPI.Controllers
             return Ok(details);
         }
 
-        // ---------------------------------------------------------
-        // 8. DOWNLOAD FILE (Doctor or Patient)
-        // ---------------------------------------------------------
+       
         [HttpGet("{consultationId}/files/{fileId}")]
         [Authorize(Roles = "Doctor,Patient")]
         public async Task<IActionResult> DownloadFile(

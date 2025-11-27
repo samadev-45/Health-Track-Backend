@@ -9,6 +9,7 @@ using Health.Application.DTOs.Prescription;
 using Health.Application.DTOs.HealthMetric;
 using Health.Application.DTOs.Dashboard;
 using Health.Domain.Entities;
+using Health.Application.DTOs.Auth;
 
 namespace Health.Application.Helpers
 {
@@ -109,7 +110,7 @@ namespace Health.Application.Helpers
                 .ForMember(d => d.Age, o => o.MapFrom(u => u.DateOfBirth.HasValue ? (int?)DateTime.UtcNow.Year - u.DateOfBirth.Value.Year ?? 0 : 0))
                 .ForMember(d => d.Gender, o => o.MapFrom(u => u.Gender.ToString()));
 
-            // ------------------ PRESCRIPTION ------------------
+            
             CreateMap<PrescriptionCreateDto, Prescription>();
             CreateMap<Prescription, PrescriptionDto>();
             CreateMap<Prescription, PrescriptionDto>();
@@ -118,6 +119,22 @@ namespace Health.Application.Helpers
 
             CreateMap<PrescriptionItemUpdateDto, PrescriptionItem>();
 
+            // ------------------ PATIENT PROFILE ------------------
+            CreateMap<User, PatientProfileDto>()
+     .ForMember(d => d.BloodTypeName,
+         o => o.MapFrom(s => s.BloodType != null ? s.BloodType.Name : null))
+     .ForMember(d => d.Gender,
+         o => o.MapFrom(s => s.Gender))
+     .ForMember(d => d.BloodTypeId,
+         o => o.MapFrom(s => s.BloodTypeId));
+
+
+
+            CreateMap<UpdatePatientProfileDto, User>()
+    .ForMember(d => d.Gender, o => o.Ignore())          // we parse gender manually
+    .ForMember(d => d.BloodType, o => o.Ignore())       // skip navigation mapping
+    .ForMember(d => d.BloodTypeId, o => o.MapFrom(s => s.BloodTypeId));
+            // navigation skip
 
         }
     }

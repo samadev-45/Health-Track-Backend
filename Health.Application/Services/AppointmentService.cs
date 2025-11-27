@@ -49,9 +49,9 @@ namespace Health.Application.Services
         #region Appointment Queries
 
         public async Task<(IEnumerable<DoctorApptRowDto> Appointments, int TotalCount)> GetDoctorAppointmentsAsync(
-            int doctorId, int? status, int page, int pageSize, CancellationToken ct = default)
+            int doctorId, int? status, int page, int pageSize,DateTime? date, CancellationToken ct = default)
         {
-            var (appointments, total) = await _readRepo.GetAppointmentsByDoctorAsync(doctorId, status, page, pageSize, ct);
+            var (appointments, total) = await _readRepo.GetAppointmentsByDoctorAsync(doctorId, status,date, page, pageSize, ct);
 
             var rows = appointments.Select(a => new DoctorApptRowDto
             {

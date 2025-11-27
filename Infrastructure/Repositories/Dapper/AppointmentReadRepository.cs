@@ -21,14 +21,14 @@ namespace Health.Infrastructure.Repositories.Dapper
         }
 
         public async Task<(IEnumerable<Appointment> Appointments, int TotalCount)> GetAppointmentsByDoctorAsync(
-            int doctorId, int? status, int page, int pageSize, CancellationToken ct = default)
+            int doctorId, int? status,DateTime? date, int page, int pageSize, CancellationToken ct = default)
         {
             using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             await connection.OpenAsync(ct);
 
             using var multi = await connection.QueryMultipleAsync(
                 "sp_GetAppointmentsByDoctor",
-                new { DoctorId = doctorId, Status = status, Page = page, PageSize = pageSize },
+                new { DoctorId = doctorId, Status = status, Page = page, Date= date, PageSize = pageSize },
                 commandType: CommandType.StoredProcedure
             );
 

@@ -35,26 +35,28 @@ namespace Health.WebAPI.Controllers
             return int.TryParse(claim.Value, out var id) ? id : 0;
         }
 
-        
+
         [HttpGet("doctor")]
         [Authorize(Roles = "Doctor")]
         public async Task<IActionResult> GetDoctorAppointments(
-            [FromQuery] int? status,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            CancellationToken ct = default)
+    [FromQuery] int? status,
+    [FromQuery] DateTime? date,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10,
+    CancellationToken ct = default)
         {
             int doctorId = GetUserId();
 
             var (appointments, total) = await _appointmentService
-                .GetDoctorAppointmentsAsync(doctorId, status, page, pageSize, ct);
+                .GetDoctorAppointmentsAsync(doctorId, status, page, pageSize,date, ct); 
 
             var result = new { TotalCount = total, Records = appointments };
 
             return Ok(ApiResponse<object>.SuccessResponse(result, "Doctor appointments fetched successfully"));
         }
 
-        
+
+
         [HttpGet("patient")]
         [Authorize(Roles = "Patient")]
         public async Task<IActionResult> GetPatientAppointments(

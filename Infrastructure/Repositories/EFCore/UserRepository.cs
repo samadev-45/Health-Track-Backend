@@ -17,8 +17,11 @@ namespace Health.Infrastructure.Repositories
 
         public async Task<User?> GetByIdAsync(int userId, CancellationToken ct = default)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId, ct);
+            return await _context.Users
+                .Include(u => u.BloodType) // IMPORTANT
+                .FirstOrDefaultAsync(u => u.UserId == userId && !u.IsDeleted, ct);
         }
+
         public async Task<IEnumerable<User>> GetDoctorsAsync(CancellationToken ct)
         {
             return await _context.Users
@@ -30,6 +33,11 @@ namespace Health.Infrastructure.Repositories
             return await _context.DoctorProfiles.FirstOrDefaultAsync(p => p.UserId == doctorId, ct);
         }
 
+        public async Task UpdateAsync(User user, CancellationToken ct = default)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync(ct);
+        }
 
     }
 }

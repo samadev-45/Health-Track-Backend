@@ -10,6 +10,6 @@ namespace Health.Application.Interfaces.EFCore
         Task<IEnumerable<User>> GetDoctorsAsync(CancellationToken ct);
         Task<DoctorProfile?> GetDoctorProfileAsync(int doctorId, CancellationToken ct = default);
 
-
+        Task UpdateAsync(User user, CancellationToken ct = default);
     }
 }
